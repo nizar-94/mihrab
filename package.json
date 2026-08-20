@@ -1,0 +1,44 @@
+{
+  "name": "muslim-app",
+  "version": "1.0.0",
+  "description": "A Windows system-tray app that shows a random or sequential Quran verse as a custom desktop notification on a schedule you choose. Fully offline, no accounts, no telemetry.",
+  "type": "module",
+  "main": "out/main/index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nizar-94/muslim-app.git"
+  },
+  "keywords": [
+    "quran",
+    "electron",
+    "tray-app",
+    "islam",
+    "reminder",
+    "notification",
+    "offline"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nizar-94/muslim-app/issues"
+  },
+  "homepage": "https://github.com/nizar-94/muslim-app#readme",
+  "dependencies": {
+    "electron": "^43.4.1",
+    "electron-store": "^11.0.2"
+  },
+  "devDependencies": {
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "vitest": "^4.1.11"
+  }
+}

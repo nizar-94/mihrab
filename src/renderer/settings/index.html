@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'" />
+  <title>Muslim App — Settings</title>
+  <style>
+    @font-face { font-family: 'Amiri Quran'; src: url('../../../resources/fonts/AmiriQuran.ttf'); }
+
+    :root {
+      --bg: #0d1a15;
+      --surface: #15281f;
+      --surface-hover: #1b3128;
+      --border: #28402f;
+      --text: #f4f1e8;
+      --text-muted: #9fb3a6;
+      --accent: #c9a15c;
+      --accent-strong: #e0b975;
+      --danger: #d9765a;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      user-select: none;
+    }
+
+    body { display: flex; flex-direction: column; overflow: hidden; }
+
+    ::selection { background: var(--accent); color: #10201a; }
+
+    button, input { font: inherit; color: inherit; }
+
+    a { color: var(--accent-strong); }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* ---- header ---- */
+    .header {
+      flex: none;
+      padding: 18px 24px 12px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #10211a, var(--bg));
+    }
+    .mark {
+      font-family: 'Amiri Quran', serif;
+      font-size: 26px;
+      line-height: 1.5;
+      color: var(--accent-strong);
+      unicode-bidi: isolate;
+    }
+    .eyebrow {
+      margin-top: 2px;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ---- scroll content ---- */
+    .content {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 16px 20px 8px;
+    }
+    .content::-webkit-scrollbar { width: 8px; }
+    .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .label {
+      margin: 0 0 10px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .card-head .label { margin-bottom: 0; }
+
+    /* ---- segmented control ---- */
+    .segmented {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 12px;
+    }
+    .segment {
+      flex: 1;
+      position: relative;
+      text-align: center;
+      padding: 6px 4px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease;
+    }
+    .segment input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+    .segment:has(input:checked) {
+      background: var(--surface-hover);
+      color: var(--accent-strong);
+      font-weight: 600;
+    }
+    .segment:has(input:focus-visible) {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .pane.hidden { display: none; }
+    .pane { display: flex; align-items: center; gap: 8px; }
+    .pane label { color: var(--text-muted); flex: none; }
+    .pane input[type='number'],
+    .pane input[type='text'] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: var(--text);
+    }
+    .pane .unit { color: var(--text-muted); flex: none; }
+
+    .row { display: flex; align-items: center; gap: 10px; }
+    .row.between { justify-content: space-between; margin-top: 8px; }
+    .row label { color: var(--text-muted); }
+    .row input[type='time'] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      color: var(--text);
+    }
+    .row input[type='range'] { flex: 1; }
+
+    .muted { color: var(--text-muted); font-size: 12px; }
+
+    /* ---- toggle switch ---- */
+    .switch {
+      position: relative;
+      display: inline-flex;
+      width: 36px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .switch input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+    .track {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      transition: background 150ms ease;
+    }
+    .thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: transform 150ms ease, background 150ms ease;
+    }
+    .switch input:checked + .track { background: #2f5240; border-color: var(--accent); }
+    .switch input:checked + .track .thumb { transform: translateX(16px); background: var(--accent-strong); }
+    .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ---- range ---- */
+    input[type='range'] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      outline-offset: 4px;
+    }
+    input[type='range']::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-strong);
+      border: none;
+      cursor: pointer;
+      margin-top: -5px;
+    }
+
+    /* ---- about ---- */
+    .about p {
+      margin: 0 0 8px;
+      color: var(--text-muted);
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+    .about p:last-child { margin-bottom: 0; }
+
+    /* ---- footer ---- */
+    .footer {
+      flex: none;
+      border-top: 1px solid var(--border);
+      padding: 10px 20px 16px;
+      background: var(--bg);
+    }
+    .error {
+      min-height: 16px;
+      color: var(--danger);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .btn {
+      border-radius: 7px;
+      padding: 7px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .btn.ghost {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn.ghost:hover { background: var(--surface-hover); }
+    .btn.ghost.small { padding: 4px 10px; font-size: 11.5px; font-weight: 500; color: var(--text-muted); }
+    .btn.primary {
+      background: var(--accent);
+      color: #17281f;
+    }
+    .btn.primary:hover { background: var(--accent-strong); }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="mark" lang="ar" dir="rtl">الإعدادات</div>
+    <div class="eyebrow">Settings</div>
+  </header>
+
+  <main class="content">
+    <section class="card">
+      <h2 class="label">Schedule</h2>
+      <div class="segmented" role="radiogroup" aria-label="Schedule mode">
+        <label class="segment">
+          <input type="radio" name="mode" value="interval" />
+          Every N min
+        </label>
+        <label class="segment">
+          <input type="radio" name="mode" value="minuteOfHour" />
+          Minute of hour
+        </label>
+        <label class="segment">
+          <input type="radio" name="mode" value="dailyTimes" />
+          Daily times
+        </label>
+      </div>
+
+      <div id="pane-interval" class="pane">
+        <label for="everyMinutes">Every</label>
+        <input type="number" id="everyMinutes" min="1" max="1440" step="1" />
+        <span class="unit">minutes</span>
+      </div>
+      <div id="pane-minuteOfHour" class="pane hidden">
+        <label for="minutes">At minute(s)</label>
+        <input type="text" id="minutes" placeholder="e.g. 0, 30" />
+      </div>
+      <div id="pane-dailyTimes" class="pane hidden">
+        <label for="times">At time(s)</label>
+        <input type="text" id="times" placeholder="e.g. 09:00, 20:00" />
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2 class="label">Quiet hours</h2>
+        <label class="switch">
+          <input type="checkbox" id="qhEnabled" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+      <div class="row">
+        <label for="qhFrom">From</label>
+        <input type="time" id="qhFrom" />
+        <label for="qhTo">To</label>
+        <input type="time" id="qhTo" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="label">Verse order</h2>
+      <div class="segmented" role="radiogroup" aria-label="Verse order">
+        <label class="segment">
+          <input type="radio" name="order" value="random" />
+          Random
+        </label>
+        <label class="segment">
+          <input type="radio" name="order" value="sequential" />
+          Sequential
+        </label>
+      </div>
+      <div class="row between">
+        <span id="position" class="muted"></span>
+        <button type="button" id="reset" class="btn ghost small">Reset position</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2 class="label">Sound</h2>
+        <label class="switch">
+          <input type="checkbox" id="soundEnabled" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+      <div class="row">
+        <label for="volume">Volume</label>
+        <input type="range" id="volume" min="0" max="1" step="0.05" />
+      </div>
+    </section>
+
+    <section class="card about">
+      <h2 class="label">About</h2>
+      <p>
+        Quran text from the
+        <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>
+        (Uthmani, v1.1), used under Creative Commons Attribution 3.0 (CC-BY 3.0). No
+        translation is bundled.
+      </p>
+      <p>
+        Arabic text set in Amiri Quran, &copy; The Amiri Project Authors, licensed under the
+        SIL Open Font License 1.1.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div id="error" class="error" role="alert"></div>
+    <div class="actions">
+      <button type="button" id="preview" class="btn ghost">Show a verse now</button>
+      <button type="button" id="save" class="btn primary">Save</button>
+    </div>
+  </footer>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

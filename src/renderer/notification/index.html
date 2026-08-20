@@ -1,0 +1,27 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self'; font-src 'self'" />
+  <style>
+    @font-face { font-family: 'Amiri Quran'; src: url('../../../resources/fonts/AmiriQuran.ttf'); }
+    body { margin: 0; font-family: system-ui; background: transparent; user-select: none; }
+    .card {
+      margin: 8px; padding: 20px; border-radius: 12px;
+      background: #12261fee; color: #f4f1e8;
+      box-shadow: 0 8px 32px #0007; cursor: pointer;
+    }
+    .ayah { font-family: 'Amiri Quran', serif; font-size: 22px; line-height: 2; }
+    .ref { margin-top: 12px; font-size: 13px; opacity: .7; }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="ayah" id="ayah"></div>
+    <div class="ref" id="ref"></div>
+  </div>
+  <audio id="chime" src="../../../resources/sounds/notify.wav" preload="auto"></audio>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
