@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateSchedule, validateQuietHours, validateSound } from '../src/main/validate.js';
+import { validateSchedule, validateQuietHours, validateSound, validateNotification } from '../src/main/validate.js';
 
 describe('validateSchedule interval', () => {
   it('accepts a sane interval', () => {
@@ -93,5 +93,40 @@ describe('validateSound', () => {
     expect(validateSound({ enabled: true, volume: 1.5 }).ok).toBe(false);
     expect(validateSound({ enabled: true, volume: -0.1 }).ok).toBe(false);
     expect(validateSound({ enabled: true, volume: 'loud' }).ok).toBe(false);
+  });
+});
+
+describe('validateNotification', () => {
+  it('accepts a sane duration and the only supported position', () => {
+    expect(validateNotification({ durationMs: 15000, position: 'bottom-right' }))
+      .toEqual({ ok: true, value: { durationMs: 15000, position: 'bottom-right' } });
+  });
+
+  it('rejects zero, negative, non-integer, non-numeric, and NaN durations', () => {
+    expect(validateNotification({ durationMs: 0, position: 'bottom-right' }).ok).toBe(false);
+    expect(validateNotification({ durationMs: -1000, position: 'bottom-right' }).ok).toBe(false);
+    expect(validateNotification({ durationMs: 1500.5, position: 'bottom-right' }).ok).toBe(false);
+    expect(validateNotification({ durationMs: 'soon', position: 'bottom-right' }).ok).toBe(false);
+    expect(validateNotification({ durationMs: NaN, position: 'bottom-right' }).ok).toBe(false);
+  });
+
+  it('rejects a duration below the 1000ms floor or above the 300000ms ceiling', () => {
+    expect(validateNotification({ durationMs: 999, position: 'bottom-right' }).ok).toBe(false);
+    expect(validateNotification({ durationMs: 300001, position: 'bottom-right' }).ok).toBe(false);
+  });
+
+  it('accepts the boundary values', () => {
+    expect(validateNotification({ durationMs: 1000, position: 'bottom-right' }).ok).toBe(true);
+    expect(validateNotification({ durationMs: 300000, position: 'bottom-right' }).ok).toBe(true);
+  });
+
+  it('rejects an unknown position', () => {
+    expect(validateNotification({ durationMs: 15000, position: 'top-left' }).ok).toBe(false);
+    expect(validateNotification({ durationMs: 15000, position: null }).ok).toBe(false);
+  });
+
+  it('rejects missing or non-object input', () => {
+    expect(validateNotification(null).ok).toBe(false);
+    expect(validateNotification('nope').ok).toBe(false);
   });
 });

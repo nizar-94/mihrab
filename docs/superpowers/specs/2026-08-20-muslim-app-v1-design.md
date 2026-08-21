@@ -175,13 +175,51 @@ migrations from day one.
   translation: { id: null, downloadedAt: null },   // null = Arabic only
   sound: { enabled: true, volume: 0.5 },
   notification: { durationMs: 15000, position: 'bottom-right' },
-  startWithWindows: false,
+  startWithWindows: true,
+  autostartInitialised: false,
   lastFiredAt: null
 }
 ```
 
-`startWithWindows` defaults to **false**. The app asks on first run rather than
-enabling itself silently.
+### Decision reversal (2026-08-21): autostart defaults on
+
+`startWithWindows` now defaults to **true** for new installs. This reverses
+the original v1 design intent stated above through 2026-08-20 — the app was
+meant to ask on first run rather than enable itself silently, and that
+decision has been deliberately overturned by the user.
+
+This is not a one-line default flip. Startup logic added shortly after v1
+made the **OS the source of truth**: on `app.whenReady()` the app reads
+`app.getLoginItemSettings({ args: AUTOSTART_ARGS }).openAtLogin` and
+reconciles `config.startWithWindows` to match it, so a user who disables
+autostart via Task Manager's Startup tab is never silently re-enabled by
+this app. Flipping only the config default would have no visible effect: on
+a fresh install the OS has no login item yet, so the very same reconcile
+would immediately flip the config straight back to `false` before the user
+ever saw the "on" state.
+
+`autostartInitialised` is a persisted marker added to resolve this. It
+distinguishes "this install has never gone through the autostart decision"
+from "it has, and the OS is now the ongoing source of truth":
+
+- **First run ever** (`autostartInitialised: false`): the app calls
+  `app.setLoginItemSettings({ openAtLogin: true, args: AUTOSTART_ARGS })` to
+  actually register autostart with the OS, sets `startWithWindows: true`,
+  and flips `autostartInitialised: true`.
+- **Every subsequent run** (`autostartInitialised: true`): unchanged from
+  the original reconcile design — the OS remains the source of truth, so if
+  the user turns autostart off (in Settings, or via Task Manager), it stays
+  off and is never silently re-enabled by this app.
+
+The decision itself (`register` vs `reconcile`) is implemented as a pure
+function (`decideAutostartAction` in `config.js`) taking only
+`autostartInitialised` and the current OS state, so it is unit-testable
+without mocking Electron's `app`.
+
+A config saved before this field existed (i.e. missing the marker but
+carrying other fields) is treated as already initialised, not fresh — this
+avoids force-enabling autostart for an existing install purely because it
+predates the new field.
 
 ## 9. UI surfaces
 

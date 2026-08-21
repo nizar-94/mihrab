@@ -2,7 +2,7 @@ import Store from 'electron-store';
 import path from 'node:path';
 import fs from 'node:fs';
 import electron from 'electron';
-import { validateSchedule, validateQuietHours } from './validate.js';
+import { validateSchedule, validateQuietHours, validateNotification } from './validate.js';
 
 // Default (non-named) import: under a real Electron main process this is the
 // Electron API object; under plain Node (e.g. this file loaded by Vitest)
@@ -30,7 +30,21 @@ export const DEFAULT_CONFIG = {
   translation: { id: null, downloadedAt: null },
   sound: { enabled: true, volume: 0.5 },
   notification: { durationMs: 15000, position: 'bottom-right' },
-  startWithWindows: false,
+  // On by default for new installs (2026-08-21 decision, reverses the
+  // original v1 design intent of asking on first run — see the spec's
+  // "Decision reversal" note). This is only the schema default; making it
+  // *actually* take effect on first launch — registering the OS login item,
+  // not just this config value — is handled by decideAutostartAction below,
+  // together with index.js's app.whenReady() handler.
+  startWithWindows: true,
+  // Distinguishes "this install has never gone through the autostart
+  // first-run decision" (false) from "it has, and the OS is now the
+  // ongoing source of truth" (true). Without this marker, flipping
+  // startWithWindows's default to true would do nothing on a fresh
+  // install: app.whenReady() reads the OS (no login item registered yet),
+  // finds it disagrees with config, and reconciles config right back to
+  // false before the user ever sees it. See decideAutostartAction.
+  autostartInitialised: false,
   lastFiredAt: null
 };
 
@@ -59,6 +73,13 @@ export function migrate(raw) {
   const quietHoursResult = validateQuietHours(merged.quietHours);
   merged.quietHours = quietHoursResult.ok ? quietHoursResult.value : structuredClone(DEFAULT_CONFIG.quietHours);
 
+  // notification.durationMs was the only config field not covered by a
+  // validator: a hand-edited non-numeric value makes setTimeout(close, NaN)
+  // fire immediately, so the card flashes and vanishes. Same guard pattern
+  // as schedule/quietHours above.
+  const notificationResult = validateNotification(merged.notification);
+  merged.notification = notificationResult.ok ? notificationResult.value : structuredClone(DEFAULT_CONFIG.notification);
+
   // A corrupt, non-null lastFiredAt (e.g. 'garbage') is truthy but parses to
   // an Invalid Date. shouldFire() would then compare NaN against `now` on
   // every tick, which is always false — the app stops reminding forever with
@@ -76,8 +97,60 @@ export function migrate(raw) {
     }
   }
 
+  // autostartInitialised must be re-derived from the *original* raw input,
+  // not from `merged` — the spread above already backfilled a missing key
+  // with DEFAULT_CONFIG's `false`, which would make "never had this field"
+  // indistinguishable from "genuinely never initialised".
+  //
+  // Three cases:
+  //  - A valid boolean was present: keep it as-is.
+  //  - The key is absent/wrong-typed AND raw has no other content (empty
+  //    input, e.g. `{}`): this is a genuinely fresh config -> false.
+  //  - The key is absent/wrong-typed BUT raw has other fields: this is a
+  //    config that predates this field (an upgrade from before this
+  //    change), not a fresh install. Treat it as already initialised
+  //    (true) so upgrading users never get autostart force-enabled out
+  //    from under them by the one-time first-run registration — that would
+  //    be worse than the "silently overridden" bug this design already
+  //    avoids for the OS-reconcile path.
+  if (typeof raw?.autostartInitialised === 'boolean') {
+    merged.autostartInitialised = raw.autostartInitialised;
+  } else if (raw && typeof raw === 'object' && Object.keys(raw).length > 0) {
+    merged.autostartInitialised = true;
+  } else {
+    merged.autostartInitialised = false;
+  }
+
   merged.version = 1;
   return merged;
+}
+
+// Pure decision for the startup autostart choice — deliberately has no
+// Electron API calls in it (no app.setLoginItemSettings /
+// getLoginItemSettings) so it can be unit tested directly with plain
+// booleans, rather than only indirectly through a mocked `app`. index.js
+// calls this once in app.whenReady() and carries out whichever action it
+// returns.
+//
+//  - Never initialised (autostartInitialised === false): this is the
+//    first run that has ever decided autostart for this install. Register
+//    it with the OS and turn the config on — this is what makes the
+//    "on by default" change in DEFAULT_CONFIG actually take effect, instead
+//    of being immediately overwritten by the very next reconcile.
+//  - Already initialised: unchanged from the prior design — the OS is the
+//    ongoing source of truth, so config is made to match whatever the OS
+//    reports (which may be true or false, e.g. the user turned it off via
+//    Task Manager's Startup tab). This never calls setLoginItemSettings;
+//    reality wins over whatever was last written to config.
+//
+// @param {boolean} autostartInitialised
+// @param {boolean} osAutostart - app.getLoginItemSettings({ args: AUTOSTART_ARGS }).openAtLogin
+// @returns {{action: 'register'|'reconcile', startWithWindows: boolean}}
+export function decideAutostartAction(autostartInitialised, osAutostart) {
+  if (!autostartInitialised) {
+    return { action: 'register', startWithWindows: true };
+  }
+  return { action: 'reconcile', startWithWindows: osAutostart };
 }
 
 // Resolves the on-disk path electron-store will use, without constructing a

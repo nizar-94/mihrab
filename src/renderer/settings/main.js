@@ -28,6 +28,7 @@ async function load() {
   $('position').textContent = `Next in order: ${surahName} — ayah ${ayahNumber}`;
   $('soundEnabled').checked = config.sound.enabled;
   $('volume').value = config.sound.volume;
+  $('startWithWindows').checked = config.startWithWindows;
 }
 
 document.querySelectorAll('input[name=mode]').forEach((r) =>
@@ -39,7 +40,8 @@ $('save').addEventListener('click', async () => {
     schedule: currentSchedule(),
     quietHours: { enabled: $('qhEnabled').checked, from: $('qhFrom').value, to: $('qhTo').value },
     verseOrder: document.querySelector('input[name=order]:checked').value,
-    sound: { enabled: $('soundEnabled').checked, volume: Number($('volume').value) }
+    sound: { enabled: $('soundEnabled').checked, volume: Number($('volume').value) },
+    startWithWindows: $('startWithWindows').checked
   });
   $('error').textContent = res.ok ? '' : res.error;
   if (res.ok) window.close();

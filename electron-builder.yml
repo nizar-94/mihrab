@@ -1,0 +1,111 @@
+# electron-builder configuration for Muslim App.
+#
+# Chosen over the package.json "build" key so this file can carry comments
+# explaining the packaging decisions (asar layout, NSIS per-user install,
+# AppUserModelId) inline, next to the settings they justify.
+#
+# NOT configured here (deliberately out of scope for this task):
+#   - code signing (certificateFile / certificatePassword) — expect an
+#     electron-builder warning about this; that's expected, not a bug. This
+#     also affects the `publish` block below: NsisUpdater only verifies an
+#     update's Authenticode publisher when app-update.yml carries a
+#     `publisherName`, and electron-builder only writes that when it can
+#     resolve a signing certificate at build time. Unsigned here, so that
+#     check is naturally inert — nothing was disabled to make unsigned
+#     updates install; there simply is no publisher identity to check yet.
+#     See src/main/updater.js and docs/code-signing.md.
+
+appId: com.nizar.muslimapp
+productName: Muslim App
+copyright: Copyright © Nizar Hawawreh
+
+directories:
+  output: dist
+  buildResources: build
+
+# electron-builder's default file set is "everything in the project except
+# a standard dev-tooling ignore list". We start from that default (rather
+# than hand-writing an allow-list) and only add project-specific excludes,
+# so we don't have to separately remember to include package.json or the
+# node_modules subtree for production dependencies (electron-store) —
+# electron-builder resolves those automatically from package.json.
+files:
+  - '!src/**'
+  - '!tests/**'
+  - '!docs/**'
+  - '!.github/**'
+  - '!.superpowers/**'
+  - '!tools/**'
+  - '!*.md'
+  - '!electron.vite.config.js'
+  - '!vitest.config.js'
+  - '!.gitignore'
+  - '!LICENSE'
+  - '!NOTICE'
+  - '!package-lock.json'
+  # resources/icons/** (tray.png) stays in the default set and is packed
+  # into app.asar — see the note in src/main/tray.js for why that's fine.
+  - '!resources/fonts/**'
+  - '!resources/sounds/**'
+  # Fonts and the notification sound are already consumed at build time:
+  # electron-vite/Vite inlines them into out/renderer/assets/ (hashed
+  # filenames, referenced by relative URL from the built HTML — verified
+  # by inspecting out/renderer/notification/index.html). The raw source
+  # copies under resources/ are dev-time-only inputs and would just be
+  # dead weight in the package.
+  - '!resources/quran-uthmani.json'
+  # The ~1.8 MB Quran dataset is intentionally EXCLUDED from the asar
+  # archive and shipped instead via extraResources below, landing beside
+  # the app (process.resourcesPath) rather than inside app.asar. See
+  # src/main/quran.js for the runtime path resolution this pairs with.
+
+extraResources:
+  - from: resources/quran-uthmani.json
+    to: quran-uthmani.json
+
+asar: true
+
+win:
+  icon: build/icon.ico
+  target:
+    - nsis
+
+# Per-user install (no admin/UAC prompt) — correct here because the app's
+# autostart entry (app.setLoginItemSettings) is written to HKCU, so a
+# per-machine (HKLM) install would put the installed app and its autostart
+# registration in mismatched scopes for a non-admin user.
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  # Windows toast notifications need a Start Menu shortcut carrying the
+  # AppUserModelId to render correctly for an app that isn't Store-packaged
+  # (see app.setAppUserModelId('com.nizar.muslimapp') in src/main/index.js,
+  # which must — and does — match appId above). Without this shortcut,
+  # Notification.show() either silently falls back to a generic "Electron"
+  # identity or fails to show at all on some Windows builds.
+  createStartMenuShortcut: true
+  shortcutName: Muslim App
+  # No desktop shortcut: this is a background tray utility with autostart,
+  # not an app users double-click each session. A desktop icon for
+  # something meant to run continuously in the tray is clutter rather than
+  # convenience — the Start Menu shortcut (needed anyway, above) plus the
+  # tray icon itself are the app's real entry points once installed.
+  createDesktopShortcut: false
+
+artifactName: '${productName}-Setup-${version}.${ext}'
+
+# GitHub Releases as the update source. electron-builder publishes the
+# installer plus latest.yml (version/sha512/release-date metadata that
+# electron-updater's GitHub provider polls) to a Release matching the
+# pushed tag when running under .github/workflows/release.yml (GH_TOKEN is
+# electron-builder's expected env var name for the GitHub API token; the
+# workflow supplies it from the built-in GITHUB_TOKEN). `publish: null`
+# previously disabled this outright — replaced now that updater.js exists
+# to consume it. This block only controls *build-time publishing*; it does
+# not by itself decide when the app checks for updates (see updater.js) or
+# require code signing (see the note above).
+publish:
+  provider: github
+  owner: nizar-94
+  repo: muslim-app

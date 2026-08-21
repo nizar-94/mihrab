@@ -2,18 +2,27 @@ import { BrowserWindow, screen } from 'electron';
 import { join } from 'path';
 
 const WIDTH = 420;
-const HEIGHT = 260;
+const DEFAULT_HEIGHT = 260;
+const MIN_HEIGHT = 90;
+const MAX_HEIGHT_RATIO = 0.6;
 const MARGIN = 16;
 
+function workArea() {
+  return screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+}
+
 export function createNotificationWindow() {
-  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-  const { x, y, width, height } = display.workArea;
+  const { x, y, width, height } = workArea();
 
   const win = new BrowserWindow({
+    // Created off-screen-invisible (show: false) at a placeholder size —
+    // the real size/position is set by positionNotificationWindow() once
+    // the renderer reports its measured content height, before the window
+    // is ever shown. This initial geometry is never seen by the user.
     width: WIDTH,
-    height: HEIGHT,
+    height: DEFAULT_HEIGHT,
     x: x + width - WIDTH - MARGIN,
-    y: y + height - HEIGHT - MARGIN,
+    y: y + height - DEFAULT_HEIGHT - MARGIN,
     frame: false,
     transparent: true,
     resizable: false,
@@ -48,6 +57,28 @@ export function createNotificationWindow() {
 
   win.setAlwaysOnTop(true, 'screen-saver');
   return win;
+}
+
+// Resizes and repositions the (still-hidden) notification window to fit its
+// measured content height, clamped to [MIN_HEIGHT, 60% of the work area's
+// height] so a pathologically long ayah (e.g. Al-Baqarah 2:282) can't push
+// the card off-screen — it may keep an internal scrollbar in that rare case
+// instead. Re-anchored bottom-right, above the taskbar, on the display that
+// currently holds the cursor, using the same margin as creation. Must be
+// called (and the window shown) only after the renderer has reported its
+// real height, so the user never sees the window resize on screen.
+export function positionNotificationWindow(win, contentHeight) {
+  if (!win || win.isDestroyed()) return;
+  const { x, y, width, height } = workArea();
+  const maxHeight = Math.round(height * MAX_HEIGHT_RATIO);
+  const measured = Math.round(Number(contentHeight)) || DEFAULT_HEIGHT;
+  const h = Math.min(Math.max(measured, MIN_HEIGHT), maxHeight);
+  win.setBounds({
+    x: x + width - WIDTH - MARGIN,
+    y: y + height - h - MARGIN,
+    width: WIDTH,
+    height: h
+  });
 }
 
 export function createSettingsWindow() {

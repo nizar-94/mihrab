@@ -1,0 +1,70 @@
+# Builds and publishes a Windows installer to a GitHub Release whenever a
+# v*-prefixed tag is pushed.
+#
+# Gate: "must not publish if tests fail" is enforced by ordinary GitHub
+# Actions step sequencing — `npx vitest run` runs before the build/publish
+# steps, and a failing step stops the job (no `continue-on-error` is set
+# anywhere here), so the publish step is simply never reached on a red
+# suite. No extra conditional logic is needed for that guarantee.
+#
+# Auth: electron-builder's GitHub publish target reads its token from the
+# GH_TOKEN env var (not GITHUB_TOKEN) — see
+# https://www.electron.build/configuration/publish#githuboptions. This
+# workflow supplies it from the repo's built-in ${{ secrets.GITHUB_TOKEN }},
+# which GitHub issues per-run automatically; no manually-created PAT is
+# needed. `permissions: contents: write` is required for that automatic
+# token to be allowed to create/upload a Release — the default permission
+# set for GITHUB_TOKEN is read-only.
+#
+# Runner: windows-latest, matching how this project is packaged/verified
+# elsewhere (real NSIS install testing was done on Windows 11) and because
+# electron-builder's Windows target (NSIS + any future code-signing step)
+# is meant to build on Windows.
+#
+# Not run automatically by anything in this change — only a manually
+# pushed `v*` tag triggers it. See the Group B report for the exact release
+# steps.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test suite
+        run: npx vitest run
+
+      - name: Build
+        run: npx electron-vite build
+
+      # --publish always: unconditionally publish this build to the GitHub
+      # Release matching the pushed tag (electron-builder otherwise only
+      # publishes on a genuine CI tag-build heuristic it can get wrong for
+      # workflow_dispatch/manual re-runs; being explicit removes that
+      # ambiguity). electron-builder infers the release/tag to publish to
+      # from GITHUB_REF, which Actions sets to the pushed tag ref for this
+      # workflow's trigger.
+      - name: Build installer and publish to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always

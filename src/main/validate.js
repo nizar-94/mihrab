@@ -55,3 +55,13 @@ export function validateSound(s) {
   }
   return ok({ enabled: s.enabled, volume: s.volume });
 }
+
+export function validateNotification(n) {
+  if (!n || typeof n !== 'object') return bad('Notification settings are missing.');
+  const d = n.durationMs;
+  if (!Number.isInteger(d) || d < 1000 || d > 300000) {
+    return bad('Duration must be a whole number of milliseconds between 1000 and 300000.');
+  }
+  if (n.position !== 'bottom-right') return bad(`Unknown notification position: ${n?.position}`);
+  return ok({ durationMs: d, position: n.position });
+}

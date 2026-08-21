@@ -6,18 +6,70 @@
         content="default-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self'; font-src 'self'" />
   <style>
     @font-face { font-family: 'Amiri Quran'; src: url('../../../resources/fonts/AmiriQuran.ttf'); }
-    body { margin: 0; font-family: system-ui; background: transparent; user-select: none; }
+    /* html/body are the scroll container, not .card. .card must keep an
+       unconstrained (auto) height so main.js's FIX-1 measurement — taken via
+       .card.getBoundingClientRect() while the window is still at its
+       placeholder size — reports the verse's true content height. Any
+       height/overflow constraint on .card itself (e.g. max-height: 100vh)
+       would be resolved against that placeholder size and corrupt the
+       measurement. Once main.js has sized the window to the (possibly
+       60%-of-workArea-clamped) real height and shown it, body's own
+       height:100% now matches that real, final size, so its overflow-y:auto
+       scrolls the oversized .card rather than clipping it — needed for
+       ayat like Al-Baqarah 2:282 (~1,208 chars), whose natural height can
+       exceed the clamp on any realistic monitor. */
+    html, body { height: 100%; overflow-x: hidden; }
+    body { margin: 0; font-family: system-ui; background: transparent; user-select: none; overflow-y: auto; }
+    /* Keep the scrollbar unobtrusive on the transparent, frameless card. */
+    body::-webkit-scrollbar { width: 6px; }
+    body::-webkit-scrollbar-thumb { background: #f4f1e855; border-radius: 3px; }
+    body::-webkit-scrollbar-track { background: transparent; }
     .card {
+      position: relative;
       margin: 8px; padding: 20px; border-radius: 12px;
       background: #12261fee; color: #f4f1e8;
       box-shadow: 0 8px 32px #0007; cursor: pointer;
+      /* Slide-in from the right + fade. Kept short so it never delays or
+         interferes with the FIX 1 height measurement, which reads layout
+         geometry (unaffected by transform/opacity) before this class is
+         ever toggled. */
+      transform: translateX(28px);
+      opacity: 0;
+      transition: transform 200ms ease-out, opacity 200ms ease-out;
     }
+    .card.show { transform: translateX(0); opacity: 1; }
     .ayah { font-family: 'Amiri Quran', serif; font-size: 22px; line-height: 2; }
+    /* Stepped down for long ayat so more text fits before the scrollbar
+       kicks in (see main.js, which applies these classes before the height
+       measurement runs). Thresholds picked from the dataset's actual length
+       distribution: 300/600 chars sit at roughly the p97/p99.8 marks, so
+       this only touches genuine outliers (~3.5% and ~0.2% of ayat
+       respectively) — the vast majority (p95 = 273 chars) render unchanged. */
+    .ayah.long { font-size: 18px; }
+    .ayah.xlong { font-size: 16px; }
     .ref { margin-top: 12px; font-size: 13px; opacity: .7; }
+    .pin {
+      position: absolute;
+      top: 8px;
+      inset-inline-end: 8px;
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; border-radius: 8px; padding: 0;
+      background: #ffffff22; color: inherit;
+      font-size: 13px; line-height: 1; cursor: pointer;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+    .pin:hover { background: #ffffff3a; }
+    .pin.pinned {
+      background: #d4af37; color: #12261f;
+      transform: rotate(-40deg);
+    }
+    audio { display: none; }
   </style>
 </head>
 <body>
   <div class="card" id="card">
+    <button class="pin" id="pin" type="button" aria-pressed="false" aria-label="Pin — keep this verse on screen" title="Pin">📌</button>
     <div class="ayah" id="ayah"></div>
     <div class="ref" id="ref"></div>
   </div>

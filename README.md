@@ -61,3 +61,28 @@ The following are deliberately out of scope for now:
 - Autostart on login
 - Installer / packaged distributable
 - Auto-updates
+
+## Licence
+
+Licensed under the **GNU General Public License v3.0 or later** — see
+[`LICENSE`](./LICENSE).
+
+In short: you are free to use, study, share, and modify this software. If you
+distribute a modified version, you must release your source under the GPL too,
+so it stays free for everyone downstream. This is deliberate — the intent is
+that nobody can take this work closed-source and build a proprietary product
+on top of it.
+
+Note that the bundled Quran text and font carry their own separate licences
+(CC-BY 3.0 and OFL-1.1 respectively) — see [`NOTICE`](./NOTICE).
+
+## Contributing
+
+Contributions are welcome. Please note that this project requires contributors
+to sign a **Contributor License Agreement (CLA)** before their code can be
+merged. This keeps the copyright consolidated so the project's licensing can be
+adjusted in future if it ever needs to be — without having to track down every
+past contributor for permission.
+
+If you are opening your first pull request, say so and the CLA process will be
+sorted out with you.

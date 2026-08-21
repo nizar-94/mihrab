@@ -1,0 +1,68 @@
+# CLA enforcement workflow.
+#
+# STATUS: committed but INERT. It will not do anything — not even run its
+# checks — until the repository owner completes the manual activation steps
+# documented in docs/cla-enforcement-setup.md (repo variable + secret +
+# branch protection). Until then, pull requests are unaffected by this file.
+#
+# Uses contributor-assistant/github-action (https://github.com/contributor-assistant/github-action),
+# a lite, self-hosted-in-your-repo version of the CLA Assistant project.
+#
+# Note (checked August 2026): the contributor-assistant/github-action
+# upstream repository was archived on 2026-03-23 ("no longer actively
+# maintained", read-only). Its existing tagged releases (this workflow pins
+# v2.6.1) remain functional, and the maintainer explicitly invited forking
+# for continued development. This is the most current, widely-used option
+# at the time this workflow was written — re-check for a maintained
+# successor before relying on this long-term. See
+# docs/cla-enforcement-setup.md for details and alternatives.
+
+name: "CLA Assistant"
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla-check:
+    # Kill switch: this job only runs once the repository owner sets the
+    # repository variable CLA_ENFORCEMENT_ENABLED to "true"
+    # (Settings -> Secrets and variables -> Actions -> Variables). Until
+    # then this workflow is a committed no-op. See
+    # docs/cla-enforcement-setup.md for the full activation checklist.
+    if: >-
+      vars.CLA_ENFORCEMENT_ENABLED == 'true' &&
+      (
+        github.event_name == 'pull_request_target' ||
+        github.event.comment.body == 'recheck' ||
+        github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: "CLA Assistant"
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_PAT }}
+        with:
+          path-to-signatures: "signatures/version1/cla.json"
+          path-to-document: "https://github.com/nizar-94/muslim-app/blob/main/CLA.md"
+          branch: "main"
+          # Bots and the project owner's own commits never need to sign.
+          allowlist: nizar-94,bot*,dependabot[bot]
+          custom-notsigned-prcomment: >
+            Thanks for the pull request! Before this can be merged, please
+            confirm you've read and agree to the Contributor License
+            Agreement (CLA.md). Post a comment on this PR with exactly:
+            "I have read the CLA Document and I hereby sign the CLA". See
+            CONTRIBUTING.md for why this project asks for this.
+          custom-pr-sign-comment: "I have read the CLA Document and I hereby sign the CLA"
+          custom-allsigned-prcomment: "All contributors have signed the CLA. Thanks!"

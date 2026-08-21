@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { migrate, DEFAULT_CONFIG, TOTAL_AYAHS } from '../src/main/config.js';
+import { migrate, DEFAULT_CONFIG, TOTAL_AYAHS, decideAutostartAction } from '../src/main/config.js';
 
 describe('migrate', () => {
   it('returns defaults for empty input', () => {
@@ -87,6 +87,67 @@ describe('migrate', () => {
   it('preserves a valid ISO lastFiredAt', () => {
     const iso = '2026-08-20T10:00:00.000Z';
     expect(migrate({ lastFiredAt: iso }).lastFiredAt).toBe(iso);
+  });
+
+  it('replaces a corrupt notification object with the default', () => {
+    expect(migrate({ notification: { durationMs: NaN, position: 'bottom-right' } }).notification)
+      .toEqual(DEFAULT_CONFIG.notification);
+    expect(migrate({ notification: { durationMs: 15000, position: 'top-left' } }).notification)
+      .toEqual(DEFAULT_CONFIG.notification);
+    expect(migrate({ notification: null }).notification).toEqual(DEFAULT_CONFIG.notification);
+  });
+
+  it('preserves a valid non-default notification', () => {
+    const n = { durationMs: 30000, position: 'bottom-right' };
+    expect(migrate({ notification: n }).notification).toEqual(n);
+  });
+
+  it('defaults startWithWindows to true and autostartInitialised to false', () => {
+    expect(DEFAULT_CONFIG.startWithWindows).toBe(true);
+    expect(DEFAULT_CONFIG.autostartInitialised).toBe(false);
+  });
+});
+
+describe('migrate: autostartInitialised marker', () => {
+  it('defaults a genuinely empty/corrupt input to false (fresh install)', () => {
+    expect(migrate({}).autostartInitialised).toBe(false);
+    expect(migrate(null).autostartInitialised).toBe(false);
+    expect(migrate('garbage').autostartInitialised).toBe(false);
+  });
+
+  it('treats a missing marker on an otherwise non-empty config as already initialised', () => {
+    // Simulates a config saved before this field existed: the key is
+    // absent, but other fields prove a real prior install, not a fresh one.
+    // Must default to true, or an upgrading user would have autostart
+    // force-enabled by the one-time first-run registration.
+    expect(migrate({ version: 1, sequencePosition: 42 }).autostartInitialised).toBe(true);
+  });
+
+  it('treats a wrong-typed marker the same way: already initialised, not fresh', () => {
+    expect(migrate({ version: 1, autostartInitialised: 'yes' }).autostartInitialised).toBe(true);
+    expect(migrate({ version: 1, autostartInitialised: 1 }).autostartInitialised).toBe(true);
+    expect(migrate({ version: 1, autostartInitialised: null }).autostartInitialised).toBe(true);
+  });
+
+  it('preserves a valid marker of either value', () => {
+    expect(migrate({ autostartInitialised: true }).autostartInitialised).toBe(true);
+    expect(migrate({ autostartInitialised: false }).autostartInitialised).toBe(false);
+  });
+});
+
+describe('decideAutostartAction (pure)', () => {
+  it('registers autostart and turns config on when never initialised, regardless of current OS state', () => {
+    expect(decideAutostartAction(false, false)).toEqual({ action: 'register', startWithWindows: true });
+    // Even if the OS somehow already has an entry, an uninitialised install
+    // still takes the register path — it's idempotent from the OS's
+    // perspective and keeps the decision function's contract simple: the
+    // marker alone gates first-run vs reconcile.
+    expect(decideAutostartAction(false, true)).toEqual({ action: 'register', startWithWindows: true });
+  });
+
+  it('reconciles to whatever the OS reports when already initialised', () => {
+    expect(decideAutostartAction(true, true)).toEqual({ action: 'reconcile', startWithWindows: true });
+    expect(decideAutostartAction(true, false)).toEqual({ action: 'reconcile', startWithWindows: false });
   });
 });
 
