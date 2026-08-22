@@ -59,7 +59,12 @@ function trayState() {
     // statusLabel() returns null while idle (nothing checked yet, or a
     // packaged-only feature that's a no-op in dev) — buildMenu/tooltipFor in
     // tray.js already treat a null/falsy label as "nothing to show".
-    updateLabel: statusLabel(getUpdateState())
+    updateLabel: statusLabel(getUpdateState()),
+    // Read here rather than in tray.js so menuTemplate() stays pure and
+    // testable without an Electron process. In a packaged build this is the
+    // version from package.json; it is what makes an applied auto-update
+    // visible from inside the app at all.
+    version: app.getVersion()
   };
 }
 

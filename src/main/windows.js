@@ -1,5 +1,22 @@
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow, screen, app } from 'electron';
 import { join } from 'path';
+
+// The window icon Windows shows in the taskbar and the window's own title
+// bar. Without an explicit `icon`, Electron falls back to the executable's
+// icon — which is unreliable here: the app sets an AppUserModelId
+// (com.nizar.muslimapp), so Windows resolves the taskbar icon through the
+// Start Menu shortcut carrying that ID rather than from the window, and
+// shows a generic placeholder when that lookup does not land on the app's
+// real icon. Pointing at the artwork directly removes the guesswork.
+//
+// 256x256 (the same source artwork as build/icon.ico, which produces the
+// installer and .exe icons) rather than the 32x32 resources/icons/tray.png,
+// so Windows downscales from a large source for the 32px taskbar and 48px
+// alt-tab slots instead of upscaling a small one. Lives in
+// resources/icons/, which electron-builder.yml keeps in the packed default
+// file set, so app.getAppPath() resolves it inside app.asar exactly as
+// tray.js does for tray.png.
+const APP_ICON = () => join(app.getAppPath(), 'resources/icons/app.png');
 
 const WIDTH = 420;
 const DEFAULT_HEIGHT = 260;
@@ -88,6 +105,7 @@ export function createSettingsWindow() {
     resizable: false,
     autoHideMenuBar: true,
     show: false,
+    icon: APP_ICON(),
     webPreferences: {
       // Same build-output scheme as the notification preload above: this
       // file is bundled into out/main/index.js, so import.meta.dirname is
