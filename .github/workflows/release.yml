@@ -51,11 +51,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # `npm test` / `npm run build` rather than `npx vitest run` /
+      # `npx electron-vite build`. npx silently falls back to DOWNLOADING a
+      # missing binary from the registry, which turned a missing
+      # devDependency into a confusing module-resolution failure three
+      # steps downstream: a bad 1.0.1 bump dropped `scripts` and
+      # `devDependencies` from package.json, `npm ci` passed (it only
+      # checks that the lockfile satisfies package.json, not the reverse),
+      # and npx then fetched vitest from the registry only to fail on
+      # `vitest/config`. npm run fails immediately with "missing script"
+      # instead, and can never install anything implicitly.
       - name: Run test suite
-        run: npx vitest run
+        run: npm test
 
       - name: Build
-        run: npx electron-vite build
+        run: npm run build
 
       # --publish always: unconditionally publish this build to the GitHub
       # Release matching the pushed tag (electron-builder otherwise only

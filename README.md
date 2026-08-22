@@ -4,6 +4,31 @@ A Windows system-tray app that shows a random or sequential Quran verse as a
 custom desktop notification, on a schedule you choose. Fully offline — no
 servers, no accounts, no telemetry.
 
+## Download
+
+Grab the latest `Muslim App-Setup-<version>.exe` from the
+[Releases page](https://github.com/nizar-94/muslim-app/releases) and run it.
+
+Windows 10/11 only, 64-bit. It installs per-user, so there is no admin
+prompt, and it adds a Start Menu entry rather than a desktop icon — the app
+lives in the notification area (the `^` chevron next to the clock), not the
+taskbar.
+
+**You will see a SmartScreen warning** — "Windows protected your PC". Click
+*More info* → *Run anyway*. This is expected: the installer is not yet
+code-signed, so Windows has no publisher identity to check it against. See
+[`docs/code-signing.md`](./docs/code-signing.md) for what is being done
+about it. Nothing about the warning is specific to this app; any unsigned
+installer gets it.
+
+The app updates itself. It checks for a new release shortly after launch and
+every six hours after that, downloads in the background, and installs the
+next time you quit — it will never restart itself while you are using it.
+You can also check on demand from the tray menu.
+
+To uninstall: Settings → Apps → Installed apps → Muslim App, or the
+`Uninstall Muslim App` entry in the install folder.
+
 ## Features
 
 - **Three scheduling modes** — pick whichever fits how you want to be
@@ -12,20 +37,37 @@ servers, no accounts, no telemetry.
   - At given minutes of each hour (e.g. `:00` and `:30`)
   - At specific daily times (e.g. `09:00`, `13:30`, `21:00`)
 - **Quiet hours** — suppress notifications during a configurable overnight
-  window.
+  window. Off by default; the 23:00–07:00 bounds are pre-filled for when you
+  turn it on.
 - **Random or sequential verse order** — either a random ayah each time, or
   work through the Quran in order starting from where you left off.
 - **Notification sound** — an optional chime, with adjustable volume.
+- **Pause** — silence reminders from the tray without changing your
+  schedule, and resume whenever.
+- **Starts with Windows** — on by default for new installs, and toggleable
+  from Settings or from Windows' own Startup apps list.
+- **Automatic updates** — checks GitHub Releases in the background and
+  installs on your next quit.
 - **Settings window** — configure everything from the tray icon; no config
   file editing required for normal use.
 
-## Getting started
+## Development
 
 ```bash
 npm install
 npm run dev    # runs the app in development mode
 npm test       # runs the test suite
+npm run dist   # builds the Windows installer into dist/
 ```
+
+Auto-update checks are inert in a dev run — they need the `app-update.yml`
+that only a packaged build has, so `npm run dev` logs a skip instead.
+
+Releases are cut by pushing a `v*` tag, which triggers
+[`.github/workflows/release.yml`](.github/workflows/release.yml): tests,
+build, then publish. Note that electron-builder uploads to a **draft**
+release, so the last step is always to publish it by hand — until you do,
+the release is invisible both to users and to the updater.
 
 ### Gotcha: Electron binary not downloaded
 
@@ -58,9 +100,13 @@ and license terms are in [`NOTICE`](./NOTICE). In summary:
 The following are deliberately out of scope for now:
 
 - Translations (only the original Arabic text is shown)
-- Autostart on login
-- Installer / packaged distributable
-- Auto-updates
+- Prayer times and athan
+- Azkar (morning and evening) and fasting reminders
+- macOS and Linux builds — Windows only for now
+- Code signing (see the SmartScreen note under [Download](#download))
+
+The roadmap for these is in
+[`docs/future-phases.md`](./docs/future-phases.md).
 
 ## Licence
 

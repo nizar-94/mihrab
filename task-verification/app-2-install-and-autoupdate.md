@@ -59,13 +59,16 @@ published, non-draft release with `Muslim-App-Setup-1.0.0.exe`,
 `curl -s https://api.github.com/repos/nizar-94/muslim-app/releases` returning
 `[]` confirms it — drafts are invisible unauthenticated.
 
-## Step 2 — Disable autostart before installing
+## Step 2 — Nothing to disable
 
-`autoInstallOnAppQuit` applies the update when the app quits. If autostart
-relaunches it immediately, the swap can happen too fast to observe.
+An earlier revision of this file told you to turn autostart off first, on
+the theory that it could relaunch the app before the update applied. That
+was wrong and has been removed: `autoInstallOnAppQuit` runs the installer
+after you quit, and autostart only launches the app at **login**, so the two
+never race. Leave your autostart setting however you like it.
 
-Leave autostart **off** in Settings for the whole of this procedure, and turn
-it back on at step 10.
+What *does* matter is quitting from the **tray menu**, not killing the
+process — see step 9.
 
 ## Step 3 — Download and install
 
@@ -268,9 +271,11 @@ is what broke.
 
 ## Step 10 — Restore and sanity-check
 
-1. Re-enable autostart in Settings if you want it.
-2. Confirm reminders still fire on schedule after the update — the config
+1. Confirm reminders still fire on schedule after the update — the config
    store must survive the version bump.
+2. Confirm your autostart setting survived too: it is stored in the Windows
+   Run key, which lives outside the install directory, so an NSIS upgrade
+   should leave it alone.
 
 **Expected:** settings and sequence position are preserved across the
 update. Config lives outside the install directory, so an NSIS upgrade

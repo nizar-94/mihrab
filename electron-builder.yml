@@ -43,6 +43,14 @@ files:
   - '!LICENSE'
   - '!NOTICE'
   - '!package-lock.json'
+  # Repository bookkeeping, not application content. Both were being packed
+  # into app.asar and shipped to every user until 1.0.2 — signatures/ holds
+  # the CLA signature ledger written by .github/workflows/cla.yml, and
+  # task-verification/ holds internal manual-test procedures. Neither is
+  # read at runtime; excluding docs/ and tests/ above but not these two was
+  # simply an oversight.
+  - '!signatures/**'
+  - '!task-verification/**'
   # resources/icons/** (tray.png, app.png) stays in the default set and is
   # packed into app.asar — see src/main/tray.js (tray icon) and
   # src/main/windows.js (taskbar/window icon) for why that is fine.

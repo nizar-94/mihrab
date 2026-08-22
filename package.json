@@ -1,6 +1,6 @@
 {
   "name": "muslim-app",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Windows system-tray app that shows a random or sequential Quran verse as a custom desktop notification on a schedule you choose. Fully offline, no accounts, no telemetry.",
   "type": "module",
   "main": "out/main/index.js",
