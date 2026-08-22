@@ -24,7 +24,13 @@ export const TOTAL_AYAHS = 6236;
 export const DEFAULT_CONFIG = {
   version: 1,
   schedule: { mode: 'interval', everyMinutes: 90 },
-  quietHours: { enabled: true, from: '23:00', to: '07:00' },
+  // Off by default (2026-08-23 decision). A new user who installs a verse
+  // reminder and gets silence between 23:00 and 07:00 has no way to tell
+  // that from the app not working — the feature is opt-in for people who
+  // are actually bothered overnight, not something to impose up front. The
+  // from/to bounds are still seeded so enabling the toggle needs no
+  // further setup.
+  quietHours: { enabled: false, from: '23:00', to: '07:00' },
   verseOrder: 'random',
   sequencePosition: 0,
   translation: { id: null, downloadedAt: null },

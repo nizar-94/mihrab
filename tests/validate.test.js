@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateSchedule, validateQuietHours, validateSound, validateNotification } from '../src/main/validate.js';
+import { validateSchedule, validateQuietHours, validateSound, validateNotification, normaliseTime } from '../src/main/validate.js';
 
 describe('validateSchedule interval', () => {
   it('accepts a sane interval', () => {
@@ -128,5 +128,64 @@ describe('validateNotification', () => {
   it('rejects missing or non-object input', () => {
     expect(validateNotification(null).ok).toBe(false);
     expect(validateNotification('nope').ok).toBe(false);
+  });
+});
+
+describe('normaliseTime — single-digit hours', () => {
+  it('pads a one-digit hour', () => {
+    expect(normaliseTime('1:31')).toBe('01:31');
+    expect(normaliseTime('9:00')).toBe('09:00');
+    expect(normaliseTime('0:05')).toBe('00:05');
+  });
+
+  it('leaves an already-padded time alone', () => {
+    expect(normaliseTime('01:31')).toBe('01:31');
+    expect(normaliseTime('23:59')).toBe('23:59');
+  });
+
+  it('tolerates surrounding whitespace, which comma-separated input produces', () => {
+    expect(normaliseTime('  7:05  ')).toBe('07:05');
+  });
+
+  it('still rejects out-of-range and malformed values', () => {
+    expect(normaliseTime('24:00')).toBe(null);
+    expect(normaliseTime('99:00')).toBe(null);
+    expect(normaliseTime('1:60')).toBe(null);
+    expect(normaliseTime('1:5')).toBe(null); // a one-digit MINUTE stays ambiguous, so stays rejected
+    expect(normaliseTime('9am')).toBe(null);
+    expect(normaliseTime('')).toBe(null);
+    expect(normaliseTime(null)).toBe(null);
+    expect(normaliseTime(930)).toBe(null);
+  });
+});
+
+describe('validateSchedule dailyTimes — single-digit hours', () => {
+  it('accepts 1:31 and stores it padded', () => {
+    const r = validateSchedule({ mode: 'dailyTimes', times: ['1:31'] });
+    expect(r.ok).toBe(true);
+    expect(r.value.times).toEqual(['01:31']);
+  });
+
+  it('sorts correctly after padding rather than lexically on the raw input', () => {
+    // A naive sort of the raw strings would put '9:00' after '20:00'.
+    const r = validateSchedule({ mode: 'dailyTimes', times: ['9:00', '20:00', '7:30'] });
+    expect(r.value.times).toEqual(['07:30', '09:00', '20:00']);
+  });
+
+  it('collapses the same time written both ways into one fire time', () => {
+    const r = validateSchedule({ mode: 'dailyTimes', times: ['9:00', '09:00'] });
+    expect(r.value.times).toEqual(['09:00']);
+  });
+});
+
+describe('validateQuietHours — single-digit hours', () => {
+  it('accepts and normalises single-digit bounds', () => {
+    const r = validateQuietHours({ enabled: true, from: '23:00', to: '7:00' });
+    expect(r.ok).toBe(true);
+    expect(r.value).toEqual({ enabled: true, from: '23:00', to: '07:00' });
+  });
+
+  it('treats 7:00 and 07:00 as the same bound when rejecting an empty window', () => {
+    expect(validateQuietHours({ enabled: true, from: '7:00', to: '07:00' }).ok).toBe(false);
   });
 });

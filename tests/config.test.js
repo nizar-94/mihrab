@@ -219,3 +219,24 @@ describe('getConfig (store construction failure)', () => {
     expect(result).not.toBe(fresh.DEFAULT_CONFIG);
   });
 });
+
+// These two defaults are deliberate product decisions rather than
+// incidental values, and every other test in this file refers to
+// DEFAULT_CONFIG symbolically — so nothing else would fail if one of them
+// were flipped by accident. Pinned literally here on purpose.
+describe('DEFAULT_CONFIG — deliberate defaults', () => {
+  it('ships with quiet hours OFF, with the bounds still seeded', () => {
+    expect(DEFAULT_CONFIG.quietHours.enabled).toBe(false);
+    expect(DEFAULT_CONFIG.quietHours.from).toBe('23:00');
+    expect(DEFAULT_CONFIG.quietHours.to).toBe('07:00');
+  });
+
+  it('ships with start-with-Windows ON for a never-initialised install', () => {
+    expect(DEFAULT_CONFIG.startWithWindows).toBe(true);
+    expect(DEFAULT_CONFIG.autostartInitialised).toBe(false);
+    // The default alone is not enough — it only takes effect because a
+    // never-initialised install registers rather than reconciles.
+    expect(decideAutostartAction(false, false))
+      .toEqual({ action: 'register', startWithWindows: true });
+  });
+});

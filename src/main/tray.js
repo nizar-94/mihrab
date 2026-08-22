@@ -1,19 +1,32 @@
-import { Tray, Menu, nativeImage, app } from 'electron';
+// Default (non-named) import, same reasoning as config.js and updater.js:
+// under a real Electron main process this is the Electron API object; under
+// plain Node (this file loaded by Vitest) 'electron' resolves to a plain
+// string, so destructuring yields `undefined` rather than throwing. A named
+// `import { Tray, Menu } from 'electron'` fails to even load outside
+// Electron — which is exactly why menuTemplate() below had no test until
+// this import was converted. Nothing here is *called* at module scope, so
+// the undefined bindings are inert until a real Electron process supplies
+// the real ones.
+import electron from 'electron';
 import { join } from 'path';
 
+const { Tray, Menu, nativeImage, app } = electron;
+
 // state shape: { paused: boolean, failing: boolean, errorLabel: string|null,
-//                updateLabel: string|null }
+//                updateLabel: string|null, version: string|null }
 // updateLabel comes straight from updater.js's statusLabel(getUpdateState())
 // — null while idle (nothing checked yet, or a no-op dev build), otherwise
 // a ready-to-display sentence for whichever of the three required manual-
 // check outcomes (available/downloading, up to date, failed) or background
 // states (checking, downloaded) is current.
-const DEFAULT_STATE = { paused: false, failing: false, errorLabel: null, updateLabel: null };
+const DEFAULT_STATE = { paused: false, failing: false, errorLabel: null, updateLabel: null, version: null };
 
-// Exported (like shouldFire in engine.js) so the menu-construction and
-// tooltip logic can be exercised and inspected directly under a real
-// Electron process without needing to click an actual tray icon.
-export function buildMenu(handlers, state) {
+// Pure: returns the menu *template* (a plain array of plain objects) rather
+// than a built Menu. Same split as updater.js's reduceUpdateState/statusLabel
+// vs its autoUpdater wiring — all the branching lives in a function that
+// needs no Electron process, so it can be asserted directly in Vitest, and
+// buildMenu below is left as a one-line adapter with nothing to get wrong.
+export function menuTemplate(handlers, state) {
   const template = [
     { label: 'Show verse now', click: handlers.onShowNow },
     // FEATURE 2: label flips between the two verbs on every rebuild so the
@@ -34,7 +47,20 @@ export function buildMenu(handlers, state) {
 
   template.push(
     { label: 'Settings', click: handlers.onSettings },
-    { type: 'separator' },
+    { type: 'separator' }
+  );
+
+  // Disabled, informational — grouped with the update item deliberately:
+  // "what am I running" and "is there something newer" are the same
+  // question asked twice, so they belong in the same section. Omitted
+  // entirely rather than rendered as "v null" when the version is absent,
+  // which is the case for DEFAULT_STATE (createTray runs before index.js
+  // has supplied any state) and under any caller that doesn't pass one.
+  if (state.version) {
+    template.push({ label: `Muslim App v${state.version}`, enabled: false });
+  }
+
+  template.push(
     // Single menu item doubling as both the trigger (click) and the status
     // display (label) — reuses the exact same rebuild-from-current-state
     // mechanism as the paused/failing items above (updateTray() replaces
@@ -47,7 +73,14 @@ export function buildMenu(handlers, state) {
     { label: 'Quit', click: handlers.onQuit }
   );
 
-  return Menu.buildFromTemplate(template);
+  return template;
+}
+
+// Thin adapter over the pure template above. Kept as a separate export so
+// callers (createTray/updateTray) are unchanged and the Electron-dependent
+// step stays one line.
+export function buildMenu(handlers, state) {
+  return Menu.buildFromTemplate(menuTemplate(handlers, state));
 }
 
 export function tooltipFor(state) {
@@ -72,6 +105,11 @@ export function createTray(handlers) {
   const tray = new Tray(icon);
   tray.setToolTip(tooltipFor(DEFAULT_STATE));
   tray.setContextMenu(buildMenu(handlers, DEFAULT_STATE));
+  // Double-click opens Settings — the conventional Windows tray gesture,
+  // and the same handler the menu's Settings item uses. Single click is
+  // deliberately left alone: on Windows a single left click is what opens
+  // the context menu, so binding anything to it would fight the menu.
+  tray.on('double-click', () => handlers.onSettings());
   return tray;
 }
 

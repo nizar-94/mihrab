@@ -43,8 +43,9 @@ files:
   - '!LICENSE'
   - '!NOTICE'
   - '!package-lock.json'
-  # resources/icons/** (tray.png) stays in the default set and is packed
-  # into app.asar — see the note in src/main/tray.js for why that's fine.
+  # resources/icons/** (tray.png, app.png) stays in the default set and is
+  # packed into app.asar — see src/main/tray.js (tray icon) and
+  # src/main/windows.js (taskbar/window icon) for why that is fine.
   - '!resources/fonts/**'
   - '!resources/sounds/**'
   # Fonts and the notification sound are already consumed at build time:
