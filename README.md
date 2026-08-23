@@ -6,9 +6,14 @@ servers, no telemetry.
 
 **[⬇ Download the latest release](https://github.com/nizar-94/mihrab/releases/latest)**
 
+<!-- SCREENSHOTS: drop the files into docs/screenshots/ and delete the two
+     comment markers around this block (and around the table further down)
+     to show them. They are hidden until the files exist, because a broken
+     image is worse than no image.
 <p align="center">
   <img src="docs/screenshots/verse-card.png" alt="A Qur'an verse notification with translation and khitmah progress" width="420">
 </p>
+-->
 
 ---
 
@@ -66,6 +71,7 @@ servers, no telemetry.
 
 ---
 
+<!-- SCREENSHOTS: see the note near the top.
 ## Screenshots
 
 | | |
@@ -76,6 +82,7 @@ servers, no telemetry.
 | A prayer reminder | A fasting reminder, the day before |
 
 ---
+-->
 
 ## Install
 
