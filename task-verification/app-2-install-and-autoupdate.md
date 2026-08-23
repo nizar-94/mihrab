@@ -1,7 +1,26 @@
 # Verification — first install and real auto-update
 
-Covers the first genuine installation of Muslim App from a published GitHub
-Release, and an end-to-end auto-update from one released version to the next.
+> **HISTORICAL — written for v1.0.0 to v1.0.2, August 2026.**
+>
+> Kept as the record of how the install and auto-update paths were first
+> verified. Two things it describes are no longer true of the current app:
+>
+> - **The app carried a different, generic name then.** It became
+>   **Mihrab** on 2026-08-23, which also changed the `appId`, the installer
+>   filename and the config directory. The steps below were updated to the
+>   current name, so they read as "Mihrab" while describing releases that
+>   actually shipped under the earlier one.
+> - **The icon was a green circle with a white M.** The current mark is a
+>   gold mosque dome on a dark ground, adopted with the 1.1.0 artwork. Step
+>   6b's "green circle with the white M" refers to the old logo.
+>
+> For verifying the current app, use `app-3-prayer-times.md` and
+> `app-4-azkar-fasting-translations.md`. The install, tray, chime and
+> auto-update procedures here remain accurate in every other respect and are
+> still the right reference for those mechanics.
+
+Covers the first genuine installation from a published GitHub Release, and
+an end-to-end auto-update from one released version to the next.
 
 Everything here is manual and on Windows. Nothing in this file can be
 automated: it exercises the Windows notification area, the NSIS installer,
@@ -12,10 +31,10 @@ SmartScreen, and electron-updater against a live GitHub Releases feed.
 - Windows 11, the machine you actually use — not a VM snapshot you discard,
   since part of what is being checked is that install/autostart/uninstall
   behave on a normal desktop.
-- No prior copy of Muslim App installed. If you have ever run `npm run dev`,
+- No prior copy of Mihrab installed. If you have ever run `npm run dev`,
   that is fine — dev runs use the same `electron-store` config path, so
   settings may carry over. That is expected, not a defect.
-- A GitHub account with write access to `nizar-94/muslim-app` (you), for
+- A GitHub account with write access to `nizar-94/mihrab` (you), for
   publishing releases.
 
 ## Preconditions
@@ -51,12 +70,12 @@ first public release contain the version line.
 show a version line in the tray; v1.0.1 will. The update is still provable
 (the line appears where there was none), just less direct.
 
-**Expected:** <https://github.com/nizar-94/muslim-app/releases> shows a
-published, non-draft release with `Muslim-App-Setup-1.0.0.exe`,
+**Expected:** <https://github.com/nizar-94/mihrab/releases> shows a
+published, non-draft release with `Mihrab-Setup-1.0.0.exe`,
 `latest.yml`, and a `.blockmap` attached.
 
 **If it fails:** an empty releases page means the release is still a draft.
-`curl -s https://api.github.com/repos/nizar-94/muslim-app/releases` returning
+`curl -s https://api.github.com/repos/nizar-94/mihrab/releases` returning
 `[]` confirms it — drafts are invisible unauthenticated.
 
 ## Step 2 — Nothing to disable
@@ -72,7 +91,7 @@ process — see step 9.
 
 ## Step 3 — Download and install
 
-Download `Muslim-App-Setup-1.0.0.exe` from the Release page — the
+Download `Mihrab-Setup-1.0.0.exe` from the Release page — the
 CI-built artifact, not a local `npm run dist` build. The point is to test
 what a real user receives.
 
@@ -84,7 +103,7 @@ what a real user receives.
 - No UAC/admin prompt: the installer is `perMachine: false`.
 - You are offered a choice of install directory
   (`allowToChangeInstallationDirectory: true`).
-- A Start Menu shortcut named "Muslim App" is created; no desktop shortcut.
+- A Start Menu shortcut named "Mihrab" is created; no desktop shortcut.
 
 **If it fails:** a UAC prompt means `perMachine` is not being honoured;
 capture the installer's behaviour and check `electron-builder.yml`.
@@ -96,7 +115,7 @@ expose notification-area icons to automation during development.
 
 **Expected:** an icon appears in the notification area. Check behind the
 hidden-icons chevron (`^`) too — Windows hides new icons by default. Hover
-shows the tooltip "Muslim App".
+shows the tooltip "Mihrab".
 
 **If it fails:** if there is no icon anywhere, including behind the chevron,
 the `nativeImage.createFromPath` asar path resolution in `src/main/tray.js`
@@ -108,12 +127,12 @@ all (Task Manager) before concluding the icon is the problem.
 Right-click the tray icon.
 
 **Expected, in order:** Show verse now / Pause reminders / Settings /
-separator / **`Muslim App v1.0.0`** (greyed out, not clickable) /
+separator / **`Mihrab v1.0.0`** (greyed out, not clickable) /
 Check for updates / separator / Quit.
 
 Under path 1b the version line is absent — expected for that path.
 
-**If it fails:** a line reading `Muslim App v null` means `trayState()` in
+**If it fails:** a line reading `Mihrab v null` means `trayState()` in
 `src/main/index.js` is not passing `app.getVersion()`.
 
 ## Step 6 — Notification and chime (chime never verified before)
@@ -199,10 +218,10 @@ To see what a genuinely new user gets:
 1. Quit the app from the tray.
 2. Move the config aside — **rename, do not delete**:
    ```bash
-   mv "$APPDATA/muslim-app/config.json" "$APPDATA/muslim-app/config.json.bak"
+   mv "$APPDATA/mihrab/config.json" "$APPDATA/mihrab/config.json.bak"
    ```
 3. Remove the autostart entry so the register branch has something to do:
-   Task Manager → Startup apps → Muslim App → Disable.
+   Task Manager → Startup apps → Mihrab → Disable.
 4. Launch the app from the Start Menu.
 
 **Expected on that first launch:** Settings shows **Start with Windows
@@ -212,13 +231,13 @@ ticked** and **quiet hours unticked**. `config.json` is recreated with
 
 5. Restore your real config afterwards if you want your old settings:
    ```bash
-   mv "$APPDATA/muslim-app/config.json.bak" "$APPDATA/muslim-app/config.json"
+   mv "$APPDATA/mihrab/config.json.bak" "$APPDATA/mihrab/config.json"
    ```
 
 **If autostart is still off on a clean profile**, that *is* a real bug —
 capture the contents of the freshly created `config.json` and whether
 `HKCU:\Software\Microsoft\Windows\CurrentVersion\Run` gained a
-`com.nizar.muslimapp` value.
+`com.nizar.mihrab` value.
 
 ## Step 7 — Cut the update
 
@@ -254,18 +273,18 @@ label advance.
 - Nothing happens at all → confirm you are running the **installed** app,
   not a dev build. Update checks are inert unless `app.isPackaged`.
 - For the underlying error, check
-  `%USERPROFILE%\AppData\Roaming\muslim-app\logs\` if present, or relaunch
+  `%USERPROFILE%\AppData\Roaming\mihrab\logs\` if present, or relaunch
   from a terminal to see stderr.
 
 ## Step 9 — Apply the update
 
 Tray → **Quit**. Wait a few seconds, then relaunch from the Start Menu.
 
-**Expected:** the tray menu now reads **`Muslim App v1.0.1`**. Under path 1b
+**Expected:** the tray menu now reads **`Mihrab v1.0.1`**. Under path 1b
 this is the first time a version line appears at all.
 
 **If it fails:** if it still reads v1.0.0, the NSIS updater did not run on
-quit. Check whether `%LOCALAPPDATA%\muslim-app-updater\` holds a downloaded
+quit. Check whether `%LOCALAPPDATA%\mihrab-updater\` holds a downloaded
 installer — if the file is there, the download worked and the install step
 is what broke.
 

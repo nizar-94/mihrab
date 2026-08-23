@@ -1,4 +1,4 @@
-# Code signing for Muslim App
+# Code signing for Mihrab
 
 Status as of writing: **the Windows build is not code-signed.** This
 document explains why that matters for this specific project, what shipping
@@ -20,7 +20,7 @@ SignPath's end, and program terms can change.
 
 ## Why this matters for this project specifically
 
-Muslim App is a free, offline, no-telemetry tray app. The entire pitch to a
+Mihrab is a free, offline, no-telemetry tray app. The entire pitch to a
 prospective user is "trust me enough to run this on your machine." An
 installer with no code signature undermines exactly that pitch at the worst
 possible moment — the first thing a new user sees after downloading it is
@@ -70,7 +70,7 @@ program page ([signpath.io/solutions/open-source-community](https://signpath.io/
 Work through these *before* applying:
 
 1. **OSI-approved open-source licence, no commercial dual-licensing.**
-   Muslim App is GPL-3.0-or-later — this qualifies. (Note: the project's
+   Mihrab is GPL-3.0-or-later — this qualifies. (Note: the project's
    `CLA.md`/`CONTRIBUTING.md` intentionally preserve the *option* to
    dual-license in future; as long as the project has not actually started
    selling a separate commercial licence, it should still meet this bar. If
@@ -78,7 +78,7 @@ Work through these *before* applying:
    re-checked with SignPath at that time.)
 2. **No proprietary or non-open-source components** bundled into what gets
    signed (aside from allowed exceptions like GPL's "System Libraries"
-   carve-out). Muslim App bundles the Tanzil Quran text (CC-BY 3.0) and the
+   carve-out). Mihrab bundles the Tanzil Quran text (CC-BY 3.0) and the
    Amiri Quran font (OFL-1.1) — both are themselves open licences, documented
    in `NOTICE`, which should be fine, but call this out explicitly in the
    application since they're not GPL.
@@ -97,7 +97,7 @@ Work through these *before* applying:
    (GitHub) accounts involved; no "hacking tool" functionality; no
    undisclosed system-configuration changes; any data collection must be
    disclosed with an installed privacy policy and an opt-out; an
-   uninstall path must exist. Muslim App is offline/no-telemetry, so most of
+   uninstall path must exist. Mihrab is offline/no-telemetry, so most of
    this should be a non-issue, but MFA on your GitHub account is something
    to actively confirm/enable before applying.
 8. **Defined project roles** (author / reviewer / approver) — for a
@@ -129,7 +129,7 @@ Work through these *before* applying:
     recommendation to publish and gain some traction before submitting.
 12. **[corrected 2026-08-23] The form's `Project Name` hint** — "A Google
     search for this name should clearly identify your project" — is not
-    satisfied by "Muslim App", which is far too generic to surface this
+    satisfied by "Mihrab", which is far too generic to surface this
     repository. Flagged as a naming decision, not resolved here.
 
 ### Application process (as currently documented)
@@ -173,7 +173,7 @@ SignPath's own review leans on being able to see (a) a real release
 artifact and (b) how it's built, so before applying:
 
 - [x] **DONE** — `electron-builder` produces a real NSIS installer
-      (`Muslim App-Setup-<version>.exe`), verified by installing and running
+      (`Mihrab-Setup-<version>.exe`), verified by installing and running
       it. Config in `electron-builder.yml`.
 - [x] **DONE** — `.github/workflows/release.yml` builds that installer from a
       clean checkout on a pushed `v*` tag, gated on the test suite passing.

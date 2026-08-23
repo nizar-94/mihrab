@@ -1,4 +1,4 @@
-# electron-builder configuration for Muslim App.
+# electron-builder configuration for Mihrab.
 #
 # Chosen over the package.json "build" key so this file can carry comments
 # explaining the packaging decisions (asar layout, NSIS per-user install,
@@ -15,8 +15,8 @@
 #     updates install; there simply is no publisher identity to check yet.
 #     See src/main/updater.js and docs/code-signing.md.
 
-appId: com.nizar.muslimapp
-productName: Muslim App
+appId: com.nizar.mihrab
+productName: Mihrab
 copyright: Copyright © Nizar Hawawreh
 
 directories:
@@ -101,12 +101,12 @@ nsis:
   allowToChangeInstallationDirectory: true
   # Windows toast notifications need a Start Menu shortcut carrying the
   # AppUserModelId to render correctly for an app that isn't Store-packaged
-  # (see app.setAppUserModelId('com.nizar.muslimapp') in src/main/index.js,
+  # (see app.setAppUserModelId('com.nizar.mihrab') in src/main/index.js,
   # which must — and does — match appId above). Without this shortcut,
   # Notification.show() either silently falls back to a generic "Electron"
   # identity or fails to show at all on some Windows builds.
   createStartMenuShortcut: true
-  shortcutName: Muslim App
+  shortcutName: Mihrab
   # No desktop shortcut: this is a background tray utility with autostart,
   # not an app users double-click each session. A desktop icon for
   # something meant to run continuously in the tray is clutter rather than
@@ -129,4 +129,17 @@ artifactName: '${productName}-Setup-${version}.${ext}'
 publish:
   provider: github
   owner: nizar-94
-  repo: muslim-app
+  repo: mihrab
+  # Publish straight away instead of creating a draft.
+  #
+  # electron-builder defaults to `draft`, which cost real time three times
+  # over: an empty Releases page after a green workflow, a stale installer
+  # downloaded from a leftover draft, and an "update check failed" that was
+  # simply the release not being visible. A published release is what both
+  # users and electron-updater's GitHub provider can actually see.
+  #
+  # The trade-off is that a pushed tag goes live the moment CI is green,
+  # with no chance to write release notes first. Notes can still be edited
+  # afterwards, and for an app that auto-updates, "visible as soon as it is
+  # built" is the behaviour that matches expectations.
+  releaseType: release

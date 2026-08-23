@@ -51,16 +51,21 @@ points the same direction: SignPath wants a release page a reviewer can
 open, and a reviewer who opens a page showing real downloads is being asked
 a much easier question.
 
-### 2. `Project Name*` — "Muslim App" is not searchable
+### 2. `Project Name*` — RESOLVED (2026-08-23)
 
-The form's own hint: "A Google search for this name should clearly identify
-your project." A search for *Muslim App* returns app-store listings for
-dozens of unrelated products; it will not surface this repository.
+The form's hint is "A Google search for this name should clearly identify
+your project." The project originally carried a generic, descriptive name
+that failed that test outright: it returned hundreds of unrelated app-store
+listings and would never have surfaced this repository.
 
-This is a naming decision, not a form-filling one, so it is flagged here
-rather than decided. Options are to leave it and accept the reviewer has to
-work harder, or to pick a distinctive name before applying. Renaming later —
-after a signed identity exists — is more disruptive than renaming now.
+It was renamed to **Mihrab** before applying — the niche in a mosque wall
+that marks the direction of prayer, which matches both what the app does and
+its dome mark. It is effectively unused as software, so a search for
+"Mihrab app" lands here.
+
+The rename was done deliberately BEFORE any signed identity existed:
+changing `appId` after certificates are issued, and after users have
+installed under the old identity, is far more disruptive than doing it now.
 
 ### 3. `Download URL` requires SignPath attribution *on the page*
 
@@ -83,24 +88,24 @@ the application is declined.
 
 ### Project Name\*
 ```
-Muslim App
+Mihrab
 ```
 See caveat 2 above.
 
 ### Repository URL\*
 ```
-https://github.com/nizar-94/muslim-app
+https://github.com/nizar-94/mihrab
 ```
 
 ### Homepage URL\*
 ```
-https://github.com/nizar-94/muslim-app
+https://github.com/nizar-94/mihrab
 ```
 No dedicated site; the form explicitly permits the repository page.
 
 ### Download URL
 ```
-https://github.com/nizar-94/muslim-app/releases
+https://github.com/nizar-94/mihrab/releases
 ```
 Only valid once a release is actually published **and** the SignPath
 attribution is present (caveat 3).
@@ -121,7 +126,7 @@ An offline Windows tray app that shows Quran verses as scheduled desktop reminde
 
 ### Description\*
 ```
-Muslim App is a Windows system-tray utility that displays a verse of the
+Mihrab is a Windows system-tray utility that displays a verse of the
 Quran as a desktop notification on a schedule the user configures. It runs
 entirely offline: the Quran text is bundled with the application, there are
 no accounts, no servers, and no telemetry of any kind. The only network
@@ -152,7 +157,7 @@ the build is reproducible from a documented GitHub Actions workflow that
 gates publication on a passing test suite, and the project ships with test
 coverage, a contributor licensing policy, and full third-party attribution.
 
-Repository: https://github.com/nizar-94/muslim-app
+Repository: https://github.com/nizar-94/mihrab
 ```
 
 Update this before submitting if there are real download numbers by then.
@@ -213,9 +218,9 @@ Three appear, one of them optional:
 Eligibility item: signed binaries must carry proper metadata. Checked
 against a local `npm run dist` build of 1.0.0:
 
-| Field | `Muslim App-Setup-1.0.0.exe` | `Muslim App.exe` |
+| Field | `Mihrab-Setup-1.0.0.exe` | `Mihrab.exe` |
 |-------|------------------------------|------------------|
-| ProductName | Muslim App | Muslim App |
+| ProductName | Mihrab | Mihrab |
 | ProductVersion | 1.0.0 | 1.0.0.0 |
 | CompanyName | Nizar Hawawreh | Nizar Hawawreh |
 | LegalCopyright | Copyright © Nizar Hawawreh | Copyright © Nizar Hawawreh |

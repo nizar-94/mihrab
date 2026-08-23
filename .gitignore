@@ -3,3 +3,11 @@ out/
 dist/
 *.log
 .superpowers/
+
+# Quran translations must never be committed. Tanzil's translations carry
+# non-commercial-only terms, so redistributing one — including as a test
+# fixture — would conflict with this project's GPL-3.0 and with the
+# "no non-open component" bar for code signing. tests/translations.test.js
+# runs against a synthetic file and skips its real-file case when absent;
+# drop a downloaded copy here locally if you want that case to run.
+tests/fixtures/*.txt

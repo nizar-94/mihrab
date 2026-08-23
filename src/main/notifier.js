@@ -150,7 +150,35 @@ export function showVerse(ayah, cfg, onShown) {
  */
 export function showPrayer(prayer, cfg, onShown) {
   return showCard(
-    (win) => win.webContents.send('prayer:show', { prayer, sound: cfg.sound }),
+    (win) => win.webContents.send('prayer:show', { prayer, sound: cfg.sound, sample: prayer.sample === true }),
+    cfg,
+    onShown
+  );
+}
+
+/**
+ * Fasting reminder card. Fires the day BEFORE the fast, so the wording is
+ * deliberately future-tense.
+ *
+ * @param {{fastDate:string, weekday:string, reasons:string[], hijri:string}} fasting
+ */
+export function showFasting(fasting, cfg, onShown) {
+  return showCard(
+    (win) => win.webContents.send('fasting:show', { fasting, sound: cfg.sound, sample: fasting.sample === true }),
+    cfg,
+    onShown
+  );
+}
+
+/**
+ * Azkar card: one dhikr, its repeat count, and where it sits in the set.
+ *
+ * @param {{session:string, ar:string, en:string, translit:string,
+ *          count:number, countLabel:string, index:number, total:number}} dhikr
+ */
+export function showDhikr(dhikr, cfg, onShown) {
+  return showCard(
+    (win) => win.webContents.send('dhikr:show', { dhikr, sound: cfg.sound, notification: cfg.notification, sample: dhikr.sample === true }),
     cfg,
     onShown
   );

@@ -1,4 +1,4 @@
-# Contributing to Muslim App
+# Contributing to Mihrab
 
 Thanks for considering a contribution. This document covers how to get a dev
 environment running, what's expected of a pull request, and — importantly —
@@ -8,8 +8,8 @@ sign before their code can be merged.
 ## Development setup
 
 ```bash
-git clone https://github.com/nizar-94/muslim-app.git
-cd muslim-app
+git clone https://github.com/nizar-94/mihrab.git
+cd mihrab
 npm install
 npm run dev    # runs the app in development mode
 npm test       # runs the test suite (vitest)
@@ -47,7 +47,7 @@ after `npm install`.
 
 ## Code and licensing
 
-Muslim App is licensed under **GPL-3.0-or-later** (see [`LICENSE`](./LICENSE)).
+Mihrab is licensed under **GPL-3.0-or-later** (see [`LICENSE`](./LICENSE)).
 Your contributions will be released under that same licence as part of the
 Project.
 
@@ -118,7 +118,7 @@ comment the bot asks for. It normally takes under a minute.
 
 ## Reporting bugs / requesting features
 
-Please use [GitHub Issues](https://github.com/nizar-94/muslim-app/issues).
+Please use [GitHub Issues](https://github.com/nizar-94/mihrab/issues).
 There's no fixed template yet — a clear description of what you expected vs.
 what happened (for bugs), or the problem you're trying to solve (for
 features), is enough to start a conversation.

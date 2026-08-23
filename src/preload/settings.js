@@ -9,5 +9,11 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   // process rather than once per Settings window.
   searchCities: (query) => ipcRenderer.invoke('cities:search', query),
   // "What times would these settings produce?" — without saving them.
-  previewPrayerTimes: (patch) => ipcRenderer.invoke('prayer:preview', patch)
+  previewPrayerTimes: (patch) => ipcRenderer.invoke('prayer:preview', patch),
+  listAzkar: () => ipcRenderer.invoke('azkar:list'),
+  showSample: (kind) => ipcRenderer.invoke('notification:sample', kind),
+  listTranslations: () => ipcRenderer.invoke('translations:list'),
+  downloadTranslation: (id) => ipcRenderer.invoke('translations:download', id),
+  removeTranslation: (id) => ipcRenderer.invoke('translations:remove', id),
+  selectTranslation: (id) => ipcRenderer.invoke('translations:select', id)
 });

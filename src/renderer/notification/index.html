@@ -51,8 +51,30 @@
        respectively) — the vast majority (p95 = 273 chars) render unchanged. */
     .ayah.long { font-size: calc(var(--verse-size, 22px) * 0.82); }
     .ayah.xlong { font-size: calc(var(--verse-size, 22px) * 0.73); }
+    /* Translation sits between the Arabic and the reference, at a clearly
+       subordinate size and always left-to-right regardless of the card's
+       RTL direction — a European-language translation inside an RTL block
+       renders with its punctuation in the wrong place otherwise. */
+    .trans {
+      margin-top: 14px; padding-top: 12px;
+      border-top: 1px solid #ffffff1f;
+      font-size: 13.5px; line-height: 1.7; opacity: .88;
+      direction: ltr; text-align: start;
+    }
+    .trans:empty { display: none; }
+    .trans.rtl { direction: rtl; text-align: start; }
     .ref { margin-top: 12px; font-size: 13px; opacity: .7; }
     .hidden { display: none; }
+    /* Khitmah progress. Deliberately understated — it is context for the
+       verse, not the point of the card — and only shown in sequential
+       order, where the number actually means something. */
+    .khitmah { margin-top: 12px; direction: ltr; }
+    .khitmah-track { height: 3px; border-radius: 2px; background: #ffffff22; overflow: hidden; }
+    .khitmah-fill { height: 100%; background: #d4af37; border-radius: 2px; transition: width 300ms ease; }
+    .khitmah-text {
+      margin-top: 6px; font-size: 11px; opacity: .6;
+      font-variant-numeric: tabular-nums; text-align: start;
+    }
     /* Prayer card. Deliberately quieter than the verse card: the Arabic
        name leads, but at a size that reads as a label rather than as
        scripture, so the two are never mistaken for one another. */
@@ -60,6 +82,35 @@
     .prayer-en { font-size: 15px; margin-top: 2px; opacity: .85; }
     .prayer-time { font-size: 30px; font-variant-numeric: tabular-nums; margin-top: 10px; letter-spacing: .5px; }
     .prayer-loc { margin-top: 10px; font-size: 12px; opacity: .6; }
+    /* Fasting card: a plain-language heading rather than Arabic, because
+       this one is about a decision to make tonight, not a moment to observe
+       now. */
+    .fasting-kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
+    .fasting-title { font-size: 20px; margin-top: 6px; line-height: 1.4; }
+    .fasting-reasons { margin-top: 8px; font-size: 13px; opacity: .85; line-height: 1.7; }
+    .fasting-hijri { margin-top: 10px; font-size: 12px; opacity: .55; }
+    /* Dhikr card. The Arabic leads at the same size as a verse, since it is
+       also meant to be read aloud, but the card is clearly not scripture:
+       the kicker names the session and the footer carries the repeat count. */
+    .dhikr-kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; margin-bottom: 8px; }
+    .dhikr-ar { font-family: 'Amiri Quran', serif; font-size: var(--verse-size, 22px); line-height: 2; }
+    .dhikr-translit { margin-top: 8px; font-size: 12.5px; opacity: .7; font-style: italic; direction: ltr; text-align: start; }
+    .dhikr-en { margin-top: 8px; font-size: 13px; opacity: .85; line-height: 1.6; direction: ltr; text-align: start; }
+    .dhikr-foot {
+      margin-top: 12px; display: flex; justify-content: space-between;
+      align-items: baseline; font-size: 12px; opacity: .6; direction: ltr;
+    }
+    .dhikr-count { color: #d4af37; opacity: .95; }
+    /* Sample badge. Deliberately prominent: a preview that looks identical
+       to a real reminder would be indistinguishable from the app firing
+       unprompted, which is alarming rather than helpful. */
+    .sample-badge {
+      position: absolute; top: 8px; inset-inline-start: 8px;
+      padding: 2px 8px; border-radius: 6px;
+      background: #d4af37; color: #12261f;
+      font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      direction: ltr;
+    }
     .pin {
       position: absolute;
       top: 8px;
@@ -81,13 +132,35 @@
 </head>
 <body>
   <div class="card" id="card">
+    <div class="sample-badge hidden" id="sample-badge">Sample</div>
     <button class="pin" id="pin" type="button" aria-pressed="false" aria-label="Pin — keep this verse on screen" title="Pin">📌</button>
     <div class="ayah" id="ayah"></div>
+    <div class="trans" id="trans"></div>
     <div class="ref" id="ref"></div>
+    <div class="khitmah hidden" id="khitmah">
+      <div class="khitmah-track"><div class="khitmah-fill" id="khitmah-fill"></div></div>
+      <div class="khitmah-text" id="khitmah-text"></div>
+    </div>
     <!-- Prayer content lives in the same card. Both blocks are present in
          the markup and one is hidden, rather than building nodes in JS, so
          the height measurement in main.js sees a fully laid-out card
          either way. -->
+    <div class="dhikr hidden" id="dhikr">
+      <div class="dhikr-kicker" id="dhikr-kicker"></div>
+      <div class="dhikr-ar" id="dhikr-ar" lang="ar" dir="rtl"></div>
+      <div class="dhikr-translit" id="dhikr-translit"></div>
+      <div class="dhikr-en" id="dhikr-en"></div>
+      <div class="dhikr-foot">
+        <span class="dhikr-count" id="dhikr-count"></span>
+        <span class="dhikr-pos" id="dhikr-pos"></span>
+      </div>
+    </div>
+    <div class="fasting hidden" id="fasting">
+      <div class="fasting-kicker" id="fasting-kicker"></div>
+      <div class="fasting-title" id="fasting-title"></div>
+      <div class="fasting-reasons" id="fasting-reasons"></div>
+      <div class="fasting-hijri" id="fasting-hijri"></div>
+    </div>
     <div class="prayer hidden" id="prayer">
       <div class="prayer-ar" id="prayer-ar"></div>
       <div class="prayer-en" id="prayer-en"></div>

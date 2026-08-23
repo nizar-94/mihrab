@@ -123,7 +123,7 @@ export function statusLabel(state) {
     case UpdateStatus.DOWNLOADED:
       return `Update ready${state.version ? ` (v${state.version})` : ''} — installs next time you quit`;
     case UpdateStatus.NOT_AVAILABLE:
-      return 'Muslim App is up to date';
+      return 'Mihrab is up to date';
     case UpdateStatus.ERROR:
       return 'Update check failed — will retry automatically';
     default:
@@ -190,7 +190,7 @@ function setState(next) {
     try {
       listener(state);
     } catch (err) {
-      console.error('muslim-app: updater state listener threw', err);
+      console.error('mihrab: updater state listener threw', err);
     }
   }
 }
@@ -244,7 +244,7 @@ function configureAutoUpdater() {
     // Swallowed by design: an unreachable GitHub or a malformed release
     // must never crash the app or touch the reminder scheduler, which is
     // entirely independent of this module.
-    console.error('muslim-app: auto-update error', err);
+    console.error('mihrab: auto-update error', err);
     setState(reduceUpdateState(state, 'error', { message: err?.message, now: new Date().toISOString() }));
   });
 }
@@ -256,7 +256,7 @@ function runCheck() {
   return Promise.resolve()
     .then(() => getAutoUpdater().checkForUpdates())
     .catch((err) => {
-      console.error('muslim-app: checkForUpdates rejected', err);
+      console.error('mihrab: checkForUpdates rejected', err);
       setState(reduceUpdateState(state, 'error', { message: err?.message, now: new Date().toISOString() }));
     });
 }
@@ -272,7 +272,7 @@ function isPackaged() {
 // error spam loop.
 export function startUpdateChecks() {
   if (!isPackaged()) {
-    console.log('muslim-app: auto-update checks skipped (not a packaged build)');
+    console.log('mihrab: auto-update checks skipped (not a packaged build)');
     return;
   }
   configureAutoUpdater();
@@ -291,7 +291,7 @@ export function stopUpdateChecks() {
 // in UpdateStatus and covered by reduceUpdateState's tests.
 export function checkForUpdatesManually() {
   if (!isPackaged()) {
-    console.log('muslim-app: manual update check skipped (not a packaged build)');
+    console.log('mihrab: manual update check skipped (not a packaged build)');
     return Promise.resolve(state);
   }
   configureAutoUpdater();

@@ -17,6 +17,8 @@ import {
   DEFAULT_POLAR_RESOLUTION
 } from './prayer/methods.js';
 import { NOTIFIABLE_KEYS, DEFAULT_PER_PRAYER } from './prayer/schedule.js';
+import { DEFAULT_FASTING } from './fasting.js';
+import { DEFAULT_AZKAR, MORNING_ANCHORS, EVENING_ANCHORS } from './azkar.js';
 
 // Hour may be one or two digits: "1:31" and "01:31" are the same time, and
 // typing the leading zero is friction with no purpose. Everything is
@@ -200,4 +202,115 @@ export function validatePrayer(p) {
   }
 
   return ok({ method, school, highLatitudeRule, polarCircleResolution, offsets, perPrayer });
+}
+
+export const FASTING_KEYS = Object.freeze(['whiteDays', 'mondayThursday', 'ashura', 'arafah', 'sixOfShawwal']);
+
+export function validateFasting(f) {
+  if (!f || typeof f !== 'object') return bad('Fasting settings are missing.');
+
+  const out = {};
+  for (const key of FASTING_KEYS) {
+    // Strict === true rather than truthiness: the main process never trusts
+    // a renderer's types, and a stray 'false' string would otherwise enable
+    // a reminder the user did not ask for.
+    out[key] = f[key] === true;
+  }
+
+  const remindAt = normaliseTime(f.remindAt ?? DEFAULT_FASTING.remindAt);
+  if (remindAt === null) {
+    return bad('Fasting reminder time must be in HH:MM format, e.g. 16:30.');
+  }
+  out.remindAt = remindAt;
+
+  return ok(out);
+}
+
+export function validateAzkar(a) {
+  if (!a || typeof a !== 'object') return bad('Azkar settings are missing.');
+
+  const session = (name, allowedAnchors) => {
+    const raw = a[name] ?? DEFAULT_AZKAR[name];
+    const anchor = allowedAnchors.some((x) => x.id === raw?.anchor)
+      ? raw.anchor
+      : DEFAULT_AZKAR[name].anchor;
+    const offset = raw?.offsetMinutes ?? DEFAULT_AZKAR[name].offsetMinutes;
+    if (!Number.isInteger(offset) || offset < 0 || offset > 240) {
+      return { error: `${name} azkar offset must be between 0 and 240 minutes.` };
+    }
+    return { value: { enabled: raw?.enabled === true, anchor, offsetMinutes: offset } };
+  };
+
+  const morning = session('morning', MORNING_ANCHORS);
+  if (morning.error) return bad(morning.error);
+  const evening = session('evening', EVENING_ANCHORS);
+  if (evening.error) return bad(evening.error);
+
+  // Positions are self-correcting — selectDhikr folds an out-of-range value
+  // back into the set — so a bad one is repaired rather than rejected. It
+  // is bookkeeping, not a user setting, and losing a place in the cycle is
+  // not worth failing a save over.
+  const clampPosition = (n) => (Number.isInteger(n) && n >= 0 ? n : 0);
+
+  // Switched-off bundled adhkar, by their order number. Repaired rather
+  // than rejected: an unknown number simply matches nothing.
+  const disabled = Array.isArray(a.disabled)
+    ? [...new Set(a.disabled.filter((n) => Number.isInteger(n) && n > 0))]
+    : [];
+
+  // The user's own adhkar. These ARE rejected on bad input, because unlike
+  // the fields above they are content the user typed and silently dropping
+  // it would look like the app losing their work.
+  const custom = [];
+  if (a.custom !== undefined && !Array.isArray(a.custom)) {
+    return bad('Custom adhkar must be a list.');
+  }
+  for (const entry of a.custom ?? []) {
+    if (!entry || typeof entry !== 'object') return bad('A custom dhikr is malformed.');
+
+    const ar = typeof entry.ar === 'string' ? entry.ar.trim() : '';
+    if (!ar) return bad('A custom dhikr needs its Arabic text.');
+    if (ar.length > 2000) return bad('A custom dhikr is too long (2000 characters maximum).');
+
+    const count = entry.count ?? 1;
+    if (!Number.isInteger(count) || count < 1 || count > 1000) {
+      return bad('Repeat count must be a whole number between 1 and 1000.');
+    }
+
+    const when = ['morning', 'evening', 'both'].includes(entry.when) ? entry.when : 'both';
+
+    custom.push({
+      // Ids only have to be unique within this list; the index is stable
+      // for the lifetime of a save and regenerated on every one.
+      id: typeof entry.id === 'string' && entry.id ? entry.id : `custom-${custom.length + 1}`,
+      ar,
+      en: typeof entry.en === 'string' ? entry.en.trim() : '',
+      translit: typeof entry.translit === 'string' ? entry.translit.trim() : '',
+      count,
+      when
+    });
+  }
+
+  return ok({
+    morning: morning.value,
+    evening: evening.value,
+    position: {
+      morning: clampPosition(a.position?.morning),
+      evening: clampPosition(a.position?.evening)
+    },
+    disabled,
+    custom
+  });
+}
+
+export const LANGUAGE_IDS = Object.freeze(['en', 'ar']);
+
+export const DEFAULT_LANGUAGE = 'ar';
+
+export function validateLanguage(id) {
+  // Falls back rather than failing: an unknown language should cost the
+  // user their language choice, not their whole save. The fallback tracks
+  // the default — falling back to English while the default is Arabic
+  // would silently switch anyone whose value got corrupted.
+  return ok(LANGUAGE_IDS.includes(id) ? id : DEFAULT_LANGUAGE);
 }

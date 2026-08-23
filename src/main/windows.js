@@ -4,7 +4,7 @@ import { join } from 'path';
 // The window icon Windows shows in the taskbar and the window's own title
 // bar. Without an explicit `icon`, Electron falls back to the executable's
 // icon — which is unreliable here: the app sets an AppUserModelId
-// (com.nizar.muslimapp), so Windows resolves the taskbar icon through the
+// (com.nizar.mihrab), so Windows resolves the taskbar icon through the
 // Start Menu shortcut carrying that ID rather than from the window, and
 // shows a generic placeholder when that lookup does not land on the app's
 // real icon. Pointing at the artwork directly removes the guesswork.

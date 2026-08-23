@@ -29,7 +29,7 @@ https://github.com/contributor-assistant/github-action.
    - GitHub -> Settings (your account, not the repo) -> Developer settings ->
      Personal access tokens -> Fine-grained tokens (or classic, with `repo`
      scope) -> Generate new token.
-   - Scope it to the `nizar-94/muslim-app` repository, with read/write
+   - Scope it to the `nizar-94/mihrab` repository, with read/write
      access to contents, issues, and pull requests (this is what lets the
      bot write the signature file and comment on PRs from forks).
    - This token is only needed because the default `GITHUB_TOKEN` that

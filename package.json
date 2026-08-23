@@ -1,6 +1,6 @@
 {
-  "name": "muslim-app",
-  "version": "1.1.0",
+  "name": "mihrab",
+  "version": "1.3.0",
   "description": "A Windows system-tray app that shows a random or sequential Quran verse as a custom desktop notification on a schedule you choose. Fully offline, no accounts, no telemetry.",
   "type": "module",
   "main": "out/main/index.js",
@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nizar-94/muslim-app.git"
+    "url": "git+https://github.com/nizar-94/mihrab.git"
   },
   "keywords": [
     "quran",
@@ -28,9 +28,9 @@
   "author": "Nizar Hawawreh",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/nizar-94/muslim-app/issues"
+    "url": "https://github.com/nizar-94/mihrab/issues"
   },
-  "homepage": "https://github.com/nizar-94/muslim-app#readme",
+  "homepage": "https://github.com/nizar-94/mihrab#readme",
   "dependencies": {
     "adhan": "^4.4.4",
     "electron-store": "^11.0.2",

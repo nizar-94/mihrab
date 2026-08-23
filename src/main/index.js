@@ -7,15 +7,35 @@ import { getAyah } from './quran.js';
 import { showVerse, registerNotifierIpc } from './notifier.js';
 import { SchedulerEngine, shouldEnterFailureAlert, shouldExitFailureAlert } from './scheduler/engine.js';
 import { createSettingsWindow } from './windows.js';
-import { validateSchedule, validateQuietHours, validateSound, validateNotification, validateLocation, validatePrayer } from './validate.js';
+import { validateSchedule, validateQuietHours, validateSound, validateNotification, validateLocation, validatePrayer, validateFasting, validateAzkar, validateLanguage, FASTING_KEYS } from './validate.js';
 import { startUpdateChecks, checkForUpdatesManually, onUpdateStateChange, getUpdateState, statusLabel } from './updater.js';
 import { nextPrayerFire } from './prayer/schedule.js';
+import { khitmahProgress, progressFromPosition } from './khitmah.js';
+import { nextFastingFire } from './fasting.js';
+import {
+  nextAzkarFire,
+  selectDhikr,
+  allEntries,
+  effectiveEntries,
+  sessionEntries,
+  MORNING_ANCHORS,
+  EVENING_ANCHORS
+} from './azkar.js';
+import { hijriDate, formatHijri } from './hijri.js';
+import { zonedTime } from './zoned.js';
 import { METHODS, SCHOOLS, HIGH_LATITUDE_RULES } from './prayer/methods.js';
 import { prayerTimes, formatPrayerTime, PRAYER_LABELS, PRAYER_KEYS } from './prayer/times.js';
 import { dueFires, suppressedByQuietHours } from './scheduler/providers.js';
 import { isWithinQuietHours } from './scheduler/quietHours.js';
 import { findCities, manualLocation } from './location/cities.js';
-import { showPrayer } from './notifier.js';
+import {
+  AVAILABLE as TRANSLATIONS,
+  downloadTranslation,
+  removeTranslation,
+  downloadedIds,
+  translatedVerse
+} from './translations.js';
+import { showPrayer, showFasting, showDhikr } from './notifier.js';
 
 let tray = null;
 let engine = null;
@@ -109,7 +129,7 @@ function togglePause() {
 function alertSchedulerFailure() {
   if (!Notification.isSupported()) return;
   new Notification({
-    title: 'Muslim App',
+    title: 'Mihrab',
     body: 'Reminders have stopped working. Open Settings from the tray menu for details.'
   }).show();
 }
@@ -154,8 +174,50 @@ function prayerProvider() {
   };
 }
 
+/**
+ * The fasting provider. Also location-gated, because both the Hijri day and
+ * the weekday depend on the user's timezone — a reminder that fires on the
+ * wrong day is worse than none.
+ */
+function fastingProvider() {
+  const cfg = getConfig();
+  if (!cfg.location) return null;
+  if (!FASTING_KEYS.some((key) => cfg.fasting?.[key])) return null;
+  return {
+    id: 'fasting',
+    // Unlike prayers, these DO respect quiet hours: a fasting reminder is
+    // an ambient nudge about tomorrow, not a moment that must be observed
+    // now, so there is no reason for it to override a user's quiet window.
+    respectsQuietHours: true,
+    nextFire: (after) => {
+      const fire = nextFastingFire(after, cfg.location.timezone, cfg.fasting);
+      return fire ? { at: fire.at, payload: fire } : null;
+    }
+  };
+}
+
+/**
+ * The azkar provider. Anchored to prayer times, so location-gated like the
+ * others.
+ */
+function azkarProvider() {
+  const cfg = getConfig();
+  if (!cfg.location) return null;
+  if (!cfg.azkar?.morning?.enabled && !cfg.azkar?.evening?.enabled) return null;
+  return {
+    id: 'azkar',
+    // Adhkar have a window rather than a fixed moment, so a quiet period is
+    // a legitimate reason to skip one.
+    respectsQuietHours: true,
+    nextFire: (after) => {
+      const fire = nextAzkarFire(after, cfg.location, cfg.prayer, cfg.azkar);
+      return fire ? { at: fire.at, payload: fire } : null;
+    }
+  };
+}
+
 function activeProviders() {
-  return [prayerProvider()].filter(Boolean);
+  return [prayerProvider(), fastingProvider(), azkarProvider()].filter(Boolean);
 }
 
 /**
@@ -186,6 +248,8 @@ function dispatchProviders() {
     for (const fire of due) {
       if (suppressedByQuietHours(fire.provider, inQuietHours)) continue;
       if (fire.provider.id === 'prayer') showPrayerNotification(fire.payload, cfg);
+      else if (fire.provider.id === 'fasting') showFastingNotification(fire.payload, cfg);
+      else if (fire.provider.id === 'azkar') showDhikrNotification(fire.payload, cfg);
     }
   } catch (err) {
     console.error('provider dispatch failed', err);
@@ -204,6 +268,49 @@ function showPrayerNotification(fire, cfg) {
     // not the reminder's — "Maghrib at 19:21", shown fifteen minutes early.
     time: fire.kind === 'before' ? formatPrayerTime(prayerTimeFor(fire.prayer, cfg), cfg.location.timezone) : time,
     location: cfg.location.name
+  }, cfg);
+}
+
+function showDhikrNotification(fire, cfg) {
+  // The effective set: bundled minus anything switched off, plus the
+  // user's own additions.
+  const entries = effectiveEntries(allEntries(), cfg.azkar);
+  const picked = selectDhikr(entries, fire.session, cfg.azkar.position?.[fire.session] ?? 0);
+  if (!picked) return;
+
+  showDhikr({
+    session: fire.session,
+    ar: picked.entry.ar,
+    en: picked.entry.en,
+    translit: picked.entry.translit,
+    count: picked.entry.count,
+    countLabel: picked.entry.countEn || (picked.entry.count > 1 ? picked.entry.count + ' times' : 'Once'),
+    index: picked.index,
+    total: picked.total
+  }, cfg, () => {
+    // Advance ONLY once the card is genuinely on screen, mirroring how the
+    // verse sequence position is persisted — otherwise a card that failed
+    // to display would silently skip a dhikr.
+    const current = getConfig().azkar;
+    setConfig({
+      azkar: {
+        ...current,
+        position: { ...current.position, [fire.session]: picked.nextPosition }
+      }
+    });
+  });
+}
+
+function showFastingNotification(fire, cfg) {
+  const timeZone = cfg.location.timezone;
+  // Noon on the fast day, so the weekday and Hijri date are both read for
+  // the day being fasted rather than the day the reminder fires.
+  const noon = zonedTime(fire.fastDate, '12:00', timeZone);
+  showFasting({
+    fastDate: fire.fastDate,
+    weekday: new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone }).format(noon),
+    reasons: fire.reasons.map((r) => r.label),
+    hijri: formatHijri(hijriDate(noon, timeZone))
   }, cfg);
 }
 
@@ -243,7 +350,15 @@ export function fire() {
   // it returns, so its return value cannot be trusted as proof of display.
   // If it never shows, nothing is persisted and the scheduler simply retries
   // on its next tick — the verse arrives late rather than being silently lost.
-  showVerse(getAyah(index), cfg, () => {
+  // null when no translation is chosen, not downloaded, or unreadable —
+  // the card simply shows Arabic only. A translation must never be able to
+  // stop a verse appearing.
+  const translation = translatedVerse(cfg.translation?.id, index);
+  // Only in sequential order: in random order the position is deliberately
+  // left untouched, so there is no progress to report and a bar would be
+  // meaningless.
+  const progress = cfg.verseOrder === 'sequential' ? khitmahProgress(index) : null;
+  showVerse({ ...getAyah(index), translation, progress }, cfg, () => {
     setConfig({ sequencePosition: nextPosition, lastFiredAt: new Date().toISOString() });
   });
 }
@@ -272,6 +387,13 @@ function registerSettingsIpc() {
       surahName: a.surahName,
       ayahNumber: a.ayahNumber,
       version: app.getVersion(),
+      // Drives the first-run banner and makes Settings open on the Athan
+      // tab, where the location field is.
+      needsLocation: !config.location,
+      // Khitmah progress for the Qur'an tab. Computed from the stored
+      // position, which points at the NEXT ayah, so it reads as "how much
+      // has been read so far".
+      khitmah: progressFromPosition(config.sequencePosition),
       // Sent rather than duplicated in the renderer, so adding a
       // calculation method in prayer/methods.js cannot leave the dropdown
       // out of step with what the validator accepts. Mapped to {id, label}
@@ -280,7 +402,9 @@ function registerSettingsIpc() {
       options: {
         methods: METHODS.map(({ id, label }) => ({ id, label })),
         schools: SCHOOLS.map(({ id, label }) => ({ id, label })),
-        highLatitudeRules: HIGH_LATITUDE_RULES.map(({ id, label }) => ({ id, label }))
+        highLatitudeRules: HIGH_LATITUDE_RULES.map(({ id, label }) => ({ id, label })),
+        morningAnchors: MORNING_ANCHORS.map(({ id, label }) => ({ id, label })),
+        eveningAnchors: EVENING_ANCHORS.map(({ id, label }) => ({ id, label }))
       },
       // Today's times for the current location, so Settings can show the
       // effect of a method or offset change immediately instead of making
@@ -337,6 +461,16 @@ function registerSettingsIpc() {
     if (!loc.ok) return loc;
     const pr = validatePrayer(patch.prayer);
     if (!pr.ok) return pr;
+    const fast = validateFasting(patch.fasting ?? getConfig().fasting);
+    if (!fast.ok) return fast;
+    // Positions are bookkeeping the form never edits, so they are carried
+    // through from the stored config rather than taken from the renderer.
+    const storedAzkar = getConfig().azkar;
+    // position is bookkeeping the form never edits, so it is preserved from
+    // storage; disabled/custom DO come from the form.
+    const azk = validateAzkar({ ...(patch.azkar ?? storedAzkar), position: storedAzkar.position });
+    if (!azk.ok) return azk;
+    const lang = validateLanguage(patch.language ?? getConfig().language);
 
     // The notification section had no editable field until the verse text
     // size was added, so this handler never carried it — which meant the
@@ -354,7 +488,10 @@ function registerSettingsIpc() {
       verseOrder,
       startWithWindows,
       location: loc.value,
-      prayer: pr.value
+      prayer: pr.value,
+      fasting: fast.value,
+      azkar: azk.value,
+      language: lang.value
     });
 
     // A changed location or method changes every upcoming fire time, so the
@@ -379,6 +516,133 @@ function registerSettingsIpc() {
     return { ok: true };
   });
 
+  // Downloaded on request, never bundled: Tanzil's translations are
+  // non-commercial-only, so the project must not redistribute them. See
+  // src/main/translations.js.
+  // The full bundled list plus the user's own, for the Settings editor.
+  // Sent whole rather than paged: 34 short entries is nothing, and the
+  // editor needs all of them to render checkboxes.
+  // Sample notifications, one per category.
+  //
+  // These go through the SAME show* functions the scheduler uses, so a
+  // sample is not an approximation — it is the real card with a badge. A
+  // separately-rendered preview would be free to drift from the thing it
+  // claims to preview, which is the usual way previews start lying.
+  //
+  // Samples work without a location by falling back to representative
+  // values: the point is to show what a reminder looks like, and refusing
+  // until the user has configured everything defeats that.
+  ipcMain.handle('notification:sample', (_e, kind) => {
+    const cfg = getConfig();
+    try {
+      if (kind === 'prayer') {
+        const timeZone = cfg.location?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const times = cfg.location ? prayerTimes(cfg.location, new Date(), cfg.prayer) : null;
+        showPrayer({
+          sample: true,
+          prayer: 'maghrib',
+          en: PRAYER_LABELS.maghrib.en,
+          ar: PRAYER_LABELS.maghrib.ar,
+          kind: 'at',
+          time: times ? formatPrayerTime(times.maghrib, timeZone) : '19:21',
+          location: cfg.location?.name ?? 'Your location'
+        }, cfg);
+        return { ok: true };
+      }
+
+      if (kind === 'azkar') {
+        const entries = effectiveEntries(allEntries(), cfg.azkar);
+        const picked = selectDhikr(entries, 'morning', cfg.azkar?.position?.morning ?? 0);
+        if (!picked) return { ok: false, error: 'No adhkar are enabled to show.' };
+        showDhikr({
+          sample: true,
+          session: 'morning',
+          ar: picked.entry.ar,
+          en: picked.entry.en,
+          translit: picked.entry.translit,
+          count: picked.entry.count,
+          countLabel: picked.entry.countEn || (picked.entry.count > 1 ? picked.entry.count + ' times' : 'Once'),
+          index: picked.index,
+          total: picked.total
+        }, cfg);
+        return { ok: true };
+      }
+
+      if (kind === 'fasting') {
+        const timeZone = cfg.location?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const tomorrow = new Date(Date.now() + 24 * 3600_000);
+        showFasting({
+          sample: true,
+          fastDate: '',
+          weekday: new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone }).format(tomorrow),
+          // A representative pair, so the sample shows that overlapping
+          // reasons are listed rather than collapsed.
+          reasons: ['White day — 14 of the month', 'Monday fast'],
+          hijri: formatHijri(hijriDate(tomorrow, timeZone))
+        }, cfg);
+        return { ok: true };
+      }
+
+      return { ok: false, error: 'Unknown sample type.' };
+    } catch (err) {
+      console.error('sample notification failed', err);
+      return { ok: false, error: err?.message ?? 'Could not show the sample.' };
+    }
+  });
+
+  ipcMain.handle('azkar:list', () => {
+    const cfg = getConfig();
+    const disabled = new Set(cfg.azkar?.disabled ?? []);
+    return {
+      bundled: allEntries().map((e) => ({
+        order: e.order,
+        when: e.when,
+        ar: e.ar,
+        en: e.en,
+        count: e.count,
+        enabled: !disabled.has(e.order)
+      })),
+      custom: cfg.azkar?.custom ?? [],
+      // How many each session currently has, so the editor can warn before
+      // the user empties one.
+      counts: {
+        morning: sessionEntries(effectiveEntries(allEntries(), cfg.azkar), 'morning').length,
+        evening: sessionEntries(effectiveEntries(allEntries(), cfg.azkar), 'evening').length
+      }
+    };
+  });
+
+  ipcMain.handle('translations:list', () => ({
+    available: TRANSLATIONS,
+    downloaded: downloadedIds()
+  }));
+
+  ipcMain.handle('translations:download', async (_e, id) => {
+    try {
+      const result = await downloadTranslation(id);
+      setConfig({ translation: { id, downloadedAt: new Date().toISOString() } });
+      return { ok: true, ...result };
+    } catch (err) {
+      console.error('translation download failed', err);
+      return { ok: false, error: err?.message ?? 'Download failed.' };
+    }
+  });
+
+  ipcMain.handle('translations:remove', (_e, id) => {
+    removeTranslation(id);
+    if (getConfig().translation?.id === id) {
+      setConfig({ translation: { id: null, downloadedAt: null } });
+    }
+    return { ok: true, downloaded: downloadedIds() };
+  });
+
+  // Selecting an already-downloaded translation, or clearing the choice.
+  ipcMain.handle('translations:select', (_e, id) => {
+    if (id && !TRANSLATIONS.some((t) => t.id === id)) return { ok: false, error: 'Unknown translation.' };
+    setConfig({ translation: { id: id ?? null, downloadedAt: getConfig().translation?.downloadedAt ?? null } });
+    return { ok: true };
+  });
+
   ipcMain.handle('settings:resetPosition', () => { setConfig({ sequencePosition: 0 }); });
   ipcMain.on('settings:preview', () => fire());
 }
@@ -386,7 +650,7 @@ function registerSettingsIpc() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.setAppUserModelId('com.nizar.muslimapp');
+  app.setAppUserModelId('com.nizar.mihrab');
 
   app.whenReady().then(() => {
     // FEATURE 1: first run vs. reconcile autostart drift between the OS and
@@ -423,7 +687,7 @@ if (!app.requestSingleInstanceLock()) {
     // development run has no business registering or deregistering a login
     // item on the developer's machine either.
     if (!app.isPackaged) {
-      console.log('muslim-app: autostart reconciliation skipped (not a packaged build)');
+      console.log('mihrab: autostart reconciliation skipped (not a packaged build)');
     } else {
       const osAutostart = app.getLoginItemSettings({ args: AUTOSTART_ARGS }).openAtLogin;
       const startupConfig = getConfig();
@@ -434,6 +698,15 @@ if (!app.requestSingleInstanceLock()) {
       } else if (startupConfig.startWithWindows !== decision.startWithWindows) {
         setConfig({ startWithWindows: decision.startWithWindows });
       }
+    }
+
+    // FIRST RUN: no location chosen and never prompted. Open Settings so
+    // the very first thing the user sees is the one question the app
+    // genuinely cannot answer for them. Marked immediately, so dismissing
+    // it means dismissed — the app asks once, not every launch.
+    if (!getConfig().location && !getConfig().onboarded) {
+      setConfig({ onboarded: true });
+      openSettings();
     }
 
     registerNotifierIpc();

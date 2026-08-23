@@ -108,3 +108,50 @@ License: MIT
 
 Used to calculate prayer times locally from the user's coordinates. Not
 modified.
+
+resources/azkar.json
+-----------------------------
+Source: Morning and Evening Adhkar Database
+        https://github.com/Seen-Arabic/Morning-And-Evening-Adhkar-DB
+        Taken at commit 29d7623fede52eca835a789025dfda866e8cfe44
+License: MIT
+
+Provides the morning and evening adhkar shown by this application, in
+Arabic with an English translation and transliteration.
+
+Note on what is licensed: the Arabic text is Qur'an and hadith and is not
+subject to copyright. The MIT licence covers the compilation, the English
+translation and the transliteration. Before this data was adopted, its
+Arabic was checked against nine well-known adhkar - Ayat al-Kursi, Sayyid
+al-Istighfar, al-Ikhlas, al-Falaq, an-Nas, "Bismillah alladhi la yadurru",
+"Radeetu billahi rabban", "Hasbiyallah" and "Subhanallah wa bihamdihi" -
+all of which are present and correctly attributed.
+
+Changes made: reduced to the fields this application uses, the numeric
+"type" field translated into a readable morning/evening/both value, and
+re-serialised. Each entry's original hadith citation is carried through
+unchanged so any text can be checked against its own reference. The
+conversion is reproducible with tools/make-azkar.mjs.
+
+Quran translations (downloaded at the user's request; NOT bundled)
+-----------------------------
+Source: Tanzil Project — https://tanzil.net/trans/
+
+No translation of the Quran is distributed with this application. When a
+user chooses a translation in Settings, the application downloads it
+directly from Tanzil to that user's own machine.
+
+This is deliberate. Tanzil's translations page states that the
+translations there are "for non-commercial purposes only". A
+non-commercial restriction is not an open-source licence, so including one
+in this GPL-3.0 application — or in its source repository, or in its
+signed installer — is not permissible. Downloading on request keeps the
+project from redistributing anything: the user obtains the text themselves
+for their own non-commercial use.
+
+Tanzil ask that applications using more than three of their translations
+link back to https://tanzil.net/trans/ so users can track updates. The
+application does so in Settings, beside the translation list.
+
+The Arabic Quran text bundled with this application is a separate matter:
+it is licensed CC-BY 3.0 and is documented at the top of this file.

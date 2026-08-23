@@ -8,7 +8,7 @@
 
 **Tech Stack:** Electron, electron-vite, plain JavaScript (ESM), electron-store, Vitest.
 
-**Spec:** `docs/superpowers/specs/2026-08-20-muslim-app-v1-design.md`
+**Spec:** `docs/superpowers/specs/2026-08-20-mihrab-v1-design.md`
 
 ---
 
@@ -145,7 +145,7 @@ tests/
 - [ ] **Step 1: Initialise the project**
 
 ```bash
-cd C:/Users/AZ/projects/muslim-app
+cd C:/Users/AZ/projects/mihrab
 npm init -y
 npm i electron electron-store
 npm i -D electron-vite electron-builder vitest
@@ -207,7 +207,7 @@ import { join } from 'path';
 export function createTray(handlers) {
   const icon = nativeImage.createFromPath(join(app.getAppPath(), 'resources/icons/tray.png'));
   const tray = new Tray(icon);
-  tray.setToolTip('Muslim App');
+  tray.setToolTip('Mihrab');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Show verse now', click: handlers.onShowNow },
     { label: 'Settings', click: handlers.onSettings },
@@ -231,7 +231,7 @@ let tray = null;
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.setAppUserModelId('com.nizar.muslimapp');
+  app.setAppUserModelId('com.nizar.mihrab');
 
   app.whenReady().then(() => {
     tray = createTray({
@@ -1124,7 +1124,7 @@ export function fire() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.setAppUserModelId('com.nizar.muslimapp');
+  app.setAppUserModelId('com.nizar.mihrab');
 
   app.whenReady().then(() => {
     registerNotifierIpc();
@@ -1404,7 +1404,7 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
-  <title>Settings — Muslim App</title>
+  <title>Settings — Mihrab</title>
   <style>
     body { font-family: system-ui; margin: 0; padding: 24px; }
     fieldset { border: 1px solid #ccc; border-radius: 8px; margin-bottom: 16px; }

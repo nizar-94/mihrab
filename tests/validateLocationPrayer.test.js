@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateLocation, validatePrayer } from '../src/main/validate.js';
+import { validateLocation, validatePrayer, validateLanguage, DEFAULT_LANGUAGE } from '../src/main/validate.js';
 import { migrate, DEFAULT_CONFIG } from '../src/main/config.js';
 import { DEFAULT_PER_PRAYER } from '../src/main/prayer/schedule.js';
 
@@ -130,14 +130,18 @@ describe('config migration v1 -> v2', () => {
     expect(migrated.sound).toEqual(v1.sound);
     expect(migrated.startWithWindows).toBe(false);
 
-    // And the new sections arrive at their defaults.
+    // The new sections arrive at their defaults. location stays null: a
+    // v1 user is prompted for one on next launch rather than being silently
+    // assigned somewhere they do not live.
     expect(migrated.location).toBeNull();
     expect(migrated.prayer).toEqual(DEFAULT_CONFIG.prayer);
   });
 
   it('drops a corrupt location rather than letting it reach the calculator', () => {
     // Latitude 500 would make every prayer time garbage. Falling back to
-    // null degrades to "no prayer times", which is visible and fixable.
+    // null degrades to "no prayer times", which is visible and fixable —
+    // deliberately NOT to the Jerusalem default, because silently relocating
+    // someone to another country is worse than showing them nothing.
     const migrated = migrate({ location: { name: 'X', latitude: 500, longitude: 0, timezone: 'UTC' } });
     expect(migrated.location).toBeNull();
   });
@@ -150,5 +154,65 @@ describe('config migration v1 -> v2', () => {
   it('repairs a corrupt prayer section instead of failing the whole config', () => {
     const migrated = migrate({ prayer: { method: 'Nonsense', offsets: { asr: 'x' } } });
     expect(migrated.prayer).toEqual(DEFAULT_CONFIG.prayer);
+  });
+});
+
+describe('DEFAULT_CONFIG — first-run location', () => {
+  it('starts with no location, so "not chosen" stays a real state', () => {
+    // A hardcoded default city was tried and reverted: it gives every user
+    // elsewhere confidently wrong prayer times. The app asks instead — see
+    // the first-run block in index.js.
+    expect(DEFAULT_CONFIG.location).toBeNull();
+  });
+
+  it('has not yet shown the prompt', () => {
+    // Separate from location being null, so someone who dismissed the
+    // prompt is not nagged on every launch.
+    expect(DEFAULT_CONFIG.onboarded).toBe(false);
+  });
+
+  it('enables the location-dependent features by default', () => {
+    // Safe precisely BECAUSE the app asks for a location: the user will
+    // have set one before any of these matter, and every provider is still
+    // location-gated if they dismiss the prompt.
+    expect(DEFAULT_CONFIG.azkar.morning.enabled).toBe(true);
+    expect(DEFAULT_CONFIG.azkar.evening.enabled).toBe(true);
+    expect(DEFAULT_CONFIG.fasting.whiteDays).toBe(true);
+    for (const prayer of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
+      expect(DEFAULT_CONFIG.prayer.perPrayer[prayer].enabled, prayer).toBe(true);
+    }
+    // Sunrise stays off — it is not a prayer.
+    expect(DEFAULT_CONFIG.prayer.perPrayer.sunrise.enabled).toBe(false);
+  });
+
+  it('accepts null as a valid location, so the default survives its own validator', () => {
+    expect(validateLocation(DEFAULT_CONFIG.location).ok).toBe(true);
+  });
+});
+
+describe('Settings language', () => {
+  it('defaults to Arabic', () => {
+    // The app's content is Arabic throughout — Quran text, prayer names,
+    // adhkar — so an English chrome around it was the odd one out.
+    expect(DEFAULT_CONFIG.language).toBe('ar');
+    expect(DEFAULT_LANGUAGE).toBe('ar');
+  });
+
+  it('accepts both supported languages', () => {
+    expect(validateLanguage('ar').value).toBe('ar');
+    expect(validateLanguage('en').value).toBe('en');
+  });
+
+  it('falls back to the DEFAULT rather than to English', () => {
+    // Falling back to 'en' while the default is 'ar' would silently switch
+    // anyone whose stored value got corrupted.
+    for (const bad of ['fr', '', null, undefined, 42, {}]) {
+      expect(validateLanguage(bad).value).toBe(DEFAULT_LANGUAGE);
+    }
+  });
+
+  it('repairs a corrupt language through migration', () => {
+    expect(migrate({ language: 'klingon' }).language).toBe('ar');
+    expect(migrate({ language: 'en' }).language).toBe('en');
   });
 });

@@ -1,4 +1,4 @@
-# Muslim App — v1 Design (Random Verse Reminders)
+# Mihrab — v1 Design (Random Verse Reminders)
 
 **Date:** 2026-08-20
 **Status:** Draft for review

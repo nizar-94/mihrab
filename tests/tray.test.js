@@ -32,23 +32,23 @@ const find = (state, predicate) => menuTemplate(handlers, state).find(predicate)
 
 describe('menuTemplate — version line', () => {
   it('renders the version as a disabled item when a version is supplied', () => {
-    const item = find({ ...baseState, version: '1.0.0' }, (i) => i.label === 'Muslim App v1.0.0');
+    const item = find({ ...baseState, version: '1.0.0' }, (i) => i.label === 'Mihrab v1.0.0');
     expect(item).toBeDefined();
     expect(item.enabled).toBe(false);
     expect(item.click).toBeUndefined();
   });
 
   it('omits the version item entirely rather than rendering "v null"', () => {
-    expect(labels(baseState).some((l) => l.startsWith('Muslim App v'))).toBe(false);
+    expect(labels(baseState).some((l) => l.startsWith('Mihrab v'))).toBe(false);
   });
 
   it('reflects whatever version it is given — this is what makes an applied update visible', () => {
-    expect(labels({ ...baseState, version: '1.0.1' })).toContain('Muslim App v1.0.1');
+    expect(labels({ ...baseState, version: '1.0.1' })).toContain('Mihrab v1.0.1');
   });
 
   it('sits immediately before the update item, so version and update status read together', () => {
     const template = menuTemplate(handlers, { ...baseState, version: '1.0.0' });
-    const versionIndex = template.findIndex((i) => i.label === 'Muslim App v1.0.0');
+    const versionIndex = template.findIndex((i) => i.label === 'Mihrab v1.0.0');
     const updateIndex = template.findIndex((i) => i.click === handlers.onCheckForUpdates);
     expect(updateIndex).toBe(versionIndex + 1);
   });
@@ -65,8 +65,8 @@ describe('menuTemplate — existing behaviour still holds', () => {
   });
 
   it('folds a status label into the update item when one exists', () => {
-    const state = { ...baseState, updateLabel: 'Muslim App is up to date' };
-    expect(labels(state)).toContain('Updates: Muslim App is up to date');
+    const state = { ...baseState, updateLabel: 'Mihrab is up to date' };
+    expect(labels(state)).toContain('Updates: Mihrab is up to date');
     expect(labels(state)).not.toContain('Check for updates');
   });
 
@@ -94,21 +94,21 @@ describe('menuTemplate — existing behaviour still holds', () => {
 describe('tooltipFor', () => {
   it('prioritises failing over paused over update status', () => {
     expect(tooltipFor({ ...baseState, failing: true, paused: true, updateLabel: 'x' }))
-      .toBe('Muslim App — reminders have stopped');
+      .toBe('Mihrab — reminders have stopped');
     expect(tooltipFor({ ...baseState, paused: true, updateLabel: 'x' }))
-      .toBe('Muslim App — reminders paused');
-    expect(tooltipFor({ ...baseState, updateLabel: 'Muslim App is up to date' }))
-      .toBe('Muslim App — Muslim App is up to date');
+      .toBe('Mihrab — reminders paused');
+    expect(tooltipFor({ ...baseState, updateLabel: 'Mihrab is up to date' }))
+      .toBe('Mihrab — Mihrab is up to date');
   });
 
   it('falls back to the bare product name', () => {
-    expect(tooltipFor(baseState)).toBe('Muslim App');
+    expect(tooltipFor(baseState)).toBe('Mihrab');
   });
 
   // The version deliberately does NOT appear in the tooltip: the tooltip is
   // for transient status, and a permanently-displayed version string would
   // crowd out the paused/failing messages that matter more at a glance.
   it('does not include the version', () => {
-    expect(tooltipFor({ ...baseState, version: '1.0.0' })).toBe('Muslim App');
+    expect(tooltipFor({ ...baseState, version: '1.0.0' })).toBe('Mihrab');
   });
 });

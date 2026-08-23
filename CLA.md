@@ -1,8 +1,8 @@
-# Muslim App Individual Contributor License Agreement (CLA)
+# Mihrab Individual Contributor License Agreement (CLA)
 
 Version 1.0 — August 2026
 
-Thank you for your interest in contributing to Muslim App (the "Project"), maintained by Nizar Hawawreh ("the Project Owner", "we", "us"). This document is a Contributor License Agreement. It is deliberately written in plain language; a short explanation of *why* it exists is in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+Thank you for your interest in contributing to Mihrab (the "Project"), maintained by Nizar Hawawreh ("the Project Owner", "we", "us"). This document is a Contributor License Agreement. It is deliberately written in plain language; a short explanation of *why* it exists is in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 This agreement is based on well-established templates, principally the [Apache Software Foundation Individual Contributor License Agreement](https://www.apache.org/licenses/icla.pdf), adapted for a small, single-maintainer open-source project.
 

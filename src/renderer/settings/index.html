@@ -1,10 +1,14 @@
 <!doctype html>
-<html lang="en">
+<!-- Arabic/RTL up front because that is the default. load() is async, so
+     the page paints before the language is applied; starting in the
+     majority state means no flash of the wrong direction for most users.
+     A user who has chosen English gets one flip on open instead. -->
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'" />
-  <title>Muslim App — Settings</title>
+  <title>Mihrab — Settings</title>
   <style>
     @font-face { font-family: 'Amiri Quran'; src: url('../../../resources/fonts/AmiriQuran.ttf'); }
 
@@ -347,6 +351,66 @@
     }
     .row input::placeholder { color: var(--text-muted); opacity: .7; }
 
+    /* Checkbox rows with a description beneath the label — the fasts are
+       not all common knowledge, and "White days" alone tells you nothing. */
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .check-row:first-of-type { border-top: none; }
+    .check-row input[type='checkbox'] { margin-top: 2px; accent-color: var(--accent); flex: none; }
+    .check-row .sub { display: block; color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
+    #fastingBody.disabled,
+    #azkarBody.disabled { opacity: .4; pointer-events: none; }
+    /* ---- azkar editor ---- */
+    .azkar-list {
+      max-height: 260px; overflow-y: auto;
+      margin: 8px 0; border: 1px solid var(--border); border-radius: 8px;
+    }
+    .azkar-list::-webkit-scrollbar { width: 8px; }
+    .azkar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .azkar-item {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 8px 10px; border-bottom: 1px solid var(--border); cursor: pointer;
+    }
+    .azkar-item:last-child { border-bottom: none; }
+    .azkar-item input[type='checkbox'] { margin-top: 3px; accent-color: var(--accent); flex: none; }
+    .azkar-item .body { min-width: 0; flex: 1; }
+    /* Clamped to two lines: some adhkar are long, and an editor where one
+       entry fills the whole list is unusable for picking. */
+    .azkar-item .ar {
+      font-family: 'Amiri Quran', serif; font-size: 14px; line-height: 1.9;
+      direction: rtl; text-align: start;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .azkar-item .meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .azkar-item .tag {
+      display: inline-block; padding: 1px 6px; border-radius: 4px;
+      background: var(--bg); border: 1px solid var(--border); margin-inline-end: 6px;
+    }
+    .azkar-item.is-custom .tag { border-color: var(--accent); color: var(--accent-strong); }
+    .azkar-item .remove {
+      flex: none; background: transparent; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px;
+    }
+    .azkar-item .remove:hover { color: var(--danger); }
+    .azkar-add { margin-top: 6px; }
+    .azkar-add summary { cursor: pointer; color: var(--accent-strong); font-size: 12.5px; padding: 4px 0; }
+    .azkar-add textarea {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 8px; color: var(--text);
+      font-family: 'Amiri Quran', serif; font-size: 15px; line-height: 1.9; resize: vertical;
+    }
+    .azkar-add .row { align-items: flex-start; }
+
+    #azkarBody .row { margin-bottom: 8px; }
+    #azkarBody .row > label { flex: 0 0 118px; }
+    h3.label { margin-bottom: 0; }
+
     /* ---- stepper ---- */
     .stepper {
       display: inline-flex;
@@ -443,6 +507,36 @@
 
     .version { font-variant-numeric: tabular-nums; color: var(--text-muted); }
 
+    /* ---- khitmah progress ---- */
+    .khitmah-box { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .khitmah-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 8px;
+    }
+    .khitmah-pct { font-size: 15px; letter-spacing: 0; color: var(--accent-strong); font-variant-numeric: tabular-nums; }
+    .khitmah-track { height: 6px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+    .khitmah-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 300ms ease; }
+    .khitmah-box .muted { margin-top: 8px; font-variant-numeric: tabular-nums; }
+    .about .author {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 10px; flex-wrap: wrap;
+      color: var(--text); font-size: 12.5px;
+      padding-bottom: 10px; margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .about .links { display: inline-flex; gap: 12px; }
+
+    /* First-run prompt. Accent-bordered rather than a modal: a tray app
+       that blocks on a dialog before it will start is hostile, and the
+       answer is one field away regardless. */
+    .onboarding {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, #1b3128, var(--surface));
+    }
+    .onboarding p { margin: 0 0 8px; line-height: 1.6; }
+    .onboarding p:last-child { margin-bottom: 0; }
+
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; }
     }
@@ -458,6 +552,8 @@
   <nav class="tabs" role="tablist" aria-label="Settings sections">
     <button type="button" class="tab" role="tab" id="tab-quran" aria-controls="pane-quran" aria-selected="true">Qur'an</button>
     <button type="button" class="tab" role="tab" id="tab-athan" aria-controls="pane-athan" aria-selected="false">Athan</button>
+    <button type="button" class="tab" role="tab" id="tab-azkar" aria-controls="pane-azkar" aria-selected="false">Azkar</button>
+    <button type="button" class="tab" role="tab" id="tab-fasting" aria-controls="pane-fasting" aria-selected="false">Fasting</button>
     <button type="button" class="tab" role="tab" id="tab-general" aria-controls="pane-general" aria-selected="false">General</button>
     <button type="button" class="tab" role="tab" id="tab-about" aria-controls="pane-about" aria-selected="false">About</button>
   </nav>
@@ -514,6 +610,27 @@
     </section>
 
     <section class="card">
+      <h2 class="label">Translation</h2>
+      <p class="muted">
+        Shown beneath the Arabic on the verse card. Translations are downloaded from
+        <a href="https://tanzil.net/trans/" target="_blank" rel="noopener noreferrer">Tanzil</a>
+        when you pick one — none is bundled with the app, and they are provided for
+        non-commercial use.
+      </p>
+      <div class="row">
+        <label for="translationSelect">Language</label>
+        <select id="translationSelect"></select>
+      </div>
+      <div class="row between">
+        <span id="translationStatus" class="muted"></span>
+        <span>
+          <button type="button" id="translationRemove" class="btn ghost small">Remove</button>
+          <button type="button" id="translationDownload" class="btn ghost small">Download</button>
+        </span>
+      </div>
+    </section>
+
+    <section class="card">
       <h2 class="label">Verse text size</h2>
       <div class="row between">
         <span class="muted">Size of the Arabic text on the notification card</span>
@@ -542,11 +659,30 @@
         <span id="position" class="muted"></span>
         <button type="button" id="reset" class="btn ghost small">Reset position</button>
       </div>
+
+      <div id="khitmahBox" class="khitmah-box hidden">
+        <div class="khitmah-head">
+          <span>Khitmah progress</span>
+          <span id="khitmahPercent" class="khitmah-pct"></span>
+        </div>
+        <div class="khitmah-track"><div class="khitmah-fill" id="khitmahFill"></div></div>
+        <div id="khitmahText" class="muted"></div>
+      </div>
     </section>
 
     </div>
 
     <div class="pane-section hidden" id="pane-athan" role="tabpanel" aria-labelledby="tab-athan">
+    <section class="card onboarding hidden" id="onboarding">
+      <h2 class="label">Welcome to Mihrab</h2>
+      <p>
+        Choose your location below. Prayer times are calculated on your own
+        machine from these coordinates — nothing is sent anywhere — and
+        adhkar and fasting reminders follow from them.
+      </p>
+      <p class="muted">Until you do, only Qur'an verse reminders are active.</p>
+    </section>
+
     <section class="card">
       <h2 class="label">Location</h2>
       <p class="muted">Prayer times are calculated on your machine from these coordinates. Nothing is sent anywhere.</p>
@@ -608,6 +744,10 @@
           </thead>
           <tbody id="prayerRows"></tbody>
         </table>
+        <div class="row between">
+          <span class="muted">See what a prayer reminder looks like</span>
+          <button type="button" id="samplePrayer" class="btn ghost small">Show a sample</button>
+        </div>
         <p class="muted">
           <strong>On time</strong> notifies at the prayer time itself.
           <strong>Early</strong> adds a separate warning that many minutes beforehand —
@@ -619,7 +759,168 @@
 
     </div>
 
+    <div class="pane-section hidden" id="pane-azkar" role="tabpanel" aria-labelledby="tab-azkar">
+    <section class="card">
+      <h2 class="label">Morning and evening adhkar</h2>
+      <p class="muted" id="azkarNoLocation">Set a location in the Athan tab to enable adhkar reminders.</p>
+
+      <div id="azkarBody">
+        <p class="muted">Adhkar follow the prayer times rather than the clock, so the reminder stays in its proper window as the day length changes through the year.</p>
+
+        <div class="card-head" style="margin-top:12px">
+          <h3 class="label">Morning</h3>
+          <label class="switch">
+            <input type="checkbox" id="azkarMorningEnabled" />
+            <span class="track"><span class="thumb"></span></span>
+          </label>
+        </div>
+        <div class="row">
+          <label for="azkarMorningAnchor">Anchor</label>
+          <select id="azkarMorningAnchor"></select>
+        </div>
+        <div class="row">
+          <label for="azkarMorningOffset">Minutes after</label>
+          <input type="number" id="azkarMorningOffset" min="0" max="240" step="5" />
+        </div>
+
+        <div class="card-head" style="margin-top:16px">
+          <h3 class="label">Evening</h3>
+          <label class="switch">
+            <input type="checkbox" id="azkarEveningEnabled" />
+            <span class="track"><span class="thumb"></span></span>
+          </label>
+        </div>
+        <div class="row">
+          <label for="azkarEveningAnchor">Anchor</label>
+          <select id="azkarEveningAnchor"></select>
+        </div>
+        <div class="row">
+          <label for="azkarEveningOffset">Minutes after</label>
+          <input type="number" id="azkarEveningOffset" min="0" max="240" step="5" />
+        </div>
+
+        <p class="muted" style="margin-top:12px">Each reminder shows one dhikr with its repeat count, moving to the next one the following day — in order, not at random.</p>
+        <div class="row between">
+          <span class="muted">See what an adhkar reminder looks like</span>
+          <button type="button" id="sampleAzkar" class="btn ghost small">Show a sample</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="azkarEditorCard">
+      <div class="card-head">
+        <h2 class="label">Which adhkar</h2>
+        <span class="muted" id="azkarCounts"></span>
+      </div>
+      <p class="muted">Untick any you would rather not be reminded of, or add your own below.</p>
+
+      <div class="row">
+        <label for="azkarFilter">Show</label>
+        <select id="azkarFilter">
+          <option value="all">All</option>
+          <option value="morning">Morning only</option>
+          <option value="evening">Evening only</option>
+        </select>
+      </div>
+
+      <div class="azkar-list" id="azkarList"></div>
+
+      <details class="azkar-add">
+        <summary>Add your own</summary>
+        <div class="row">
+          <label for="azkarNewAr">Arabic</label>
+          <textarea id="azkarNewAr" rows="3" placeholder="النص العربي" lang="ar" dir="rtl"></textarea>
+        </div>
+        <div class="row">
+          <label for="azkarNewEn">Translation</label>
+          <input type="text" id="azkarNewEn" placeholder="Optional" />
+        </div>
+        <div class="row">
+          <label for="azkarNewCount">Repeat</label>
+          <input type="number" id="azkarNewCount" min="1" max="1000" step="1" value="1" />
+          <label for="azkarNewWhen">When</label>
+          <select id="azkarNewWhen">
+            <option value="both">Morning and evening</option>
+            <option value="morning">Morning only</option>
+            <option value="evening">Evening only</option>
+          </select>
+        </div>
+        <button type="button" id="azkarAdd" class="btn ghost small">Add dhikr</button>
+      </details>
+    </section>
+    </div>
+
+    <div class="pane-section hidden" id="pane-fasting" role="tabpanel" aria-labelledby="tab-fasting">
+    <section class="card" id="fastingCard">
+      <h2 class="label">Fasting reminders</h2>
+      <p class="muted" id="fastingNoLocation">Set a location in the Athan tab to enable fasting reminders.</p>
+
+      <div id="fastingBody">
+        <p class="muted">Reminders arrive the <strong>day before</strong>, so there is still time to prepare and to make suhoor.</p>
+
+        <label class="check-row">
+          <input type="checkbox" id="fastWhiteDays" />
+          <span>
+            <strong>White days</strong>
+            <span class="sub">The 13th, 14th and 15th of every Hijri month</span>
+          </span>
+        </label>
+
+        <label class="check-row">
+          <input type="checkbox" id="fastMondayThursday" />
+          <span>
+            <strong>Mondays and Thursdays</strong>
+            <span class="sub">Every week</span>
+          </span>
+        </label>
+
+        <label class="check-row">
+          <input type="checkbox" id="fastAshura" />
+          <span>
+            <strong>Tasu'a and Ashura</strong>
+            <span class="sub">9 and 10 Muharram</span>
+          </span>
+        </label>
+
+        <label class="check-row">
+          <input type="checkbox" id="fastArafah" />
+          <span>
+            <strong>Day of Arafah</strong>
+            <span class="sub">9 Dhu al-Hijjah</span>
+          </span>
+        </label>
+
+        <label class="check-row">
+          <input type="checkbox" id="fastSixOfShawwal" />
+          <span>
+            <strong>Six days of Shawwal</strong>
+            <span class="sub">A reminder across Shawwal 2-7; they need not be consecutive</span>
+          </span>
+        </label>
+
+        <div class="row between">
+          <label for="fastRemindAt">Remind me at</label>
+          <input type="time" id="fastRemindAt" />
+        </div>
+        <div class="row between">
+          <span class="muted">See what a fasting reminder looks like</span>
+          <button type="button" id="sampleFasting" class="btn ghost small">Show a sample</button>
+        </div>
+        <p class="muted">Ramadan is deliberately not included — its daily rhythm is already covered by the Fajr and Maghrib reminders.</p>
+      </div>
+    </section>
+    </div>
+
     <div class="pane-section hidden" id="pane-general" role="tabpanel" aria-labelledby="tab-general">
+    <section class="card">
+      <h2 class="label">Language</h2>
+      <div class="row">
+        <label for="uiLanguage">Settings language</label>
+        <select id="uiLanguage"></select>
+      </div>
+      <p class="muted">Changes this window only. Verses, prayer names and adhkar are always shown in Arabic.</p>
+    </section>
+
     <section class="card">
       <div class="card-head">
         <h2 class="label">Sound</h2>
@@ -642,7 +943,7 @@
           <span class="track"><span class="thumb"></span></span>
         </label>
       </div>
-      <p class="muted">Start Muslim App automatically when you sign in to Windows.</p>
+      <p class="muted">Start Mihrab automatically when you sign in to Windows.</p>
     </section>
 
     </div>
@@ -650,7 +951,14 @@
     <div class="pane-section hidden" id="pane-about" role="tabpanel" aria-labelledby="tab-about">
     <section class="card about">
       <h2 class="label">About</h2>
-      <p class="version" id="appVersion">Muslim App</p>
+      <p class="version" id="appVersion">Mihrab</p>
+      <p class="author">
+        Built by <strong>Nizar Hawawreh</strong>
+        <span class="links">
+          <a href="https://github.com/nizar-94" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a id="authorLinkedin" href="https://www.linkedin.com/in/nizar-hawawreh/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </span>
+      </p>
       <p>
         Prayer times calculated locally with
         <a href="https://github.com/batoulapps/adhan-js" target="_blank" rel="noopener noreferrer">adhan</a>

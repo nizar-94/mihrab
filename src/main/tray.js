@@ -58,7 +58,7 @@ export function menuTemplate(handlers, state) {
   // which is the case for DEFAULT_STATE (createTray runs before index.js
   // has supplied any state) and under any caller that doesn't pass one.
   if (state.version) {
-    template.push({ label: `Muslim App v${state.version}`, enabled: false });
+    template.push({ label: `Mihrab v${state.version}`, enabled: false });
   }
 
   template.push(
@@ -85,10 +85,10 @@ export function buildMenu(handlers, state) {
 }
 
 export function tooltipFor(state) {
-  if (state.failing) return 'Muslim App — reminders have stopped';
-  if (state.paused) return 'Muslim App — reminders paused';
-  if (state.updateLabel) return `Muslim App — ${state.updateLabel}`;
-  return 'Muslim App';
+  if (state.failing) return 'Mihrab — reminders have stopped';
+  if (state.paused) return 'Mihrab — reminders paused';
+  if (state.updateLabel) return `Mihrab — ${state.updateLabel}`;
+  return 'Mihrab';
 }
 
 // The tray icons are a few KB each, unlike the ~1.8 MB Quran dataset in

@@ -21,7 +21,7 @@ and the Settings window.
 
 - `npm test` green (258 at time of writing).
 - If you want to see the "no location" state, move your config aside first:
-  `mv "$APPDATA/muslim-app/config.json" "$APPDATA/muslim-app/config.json.bak"`
+  `mv "$APPDATA/mihrab/config.json" "$APPDATA/mihrab/config.json.bak"`
 
 ---
 
@@ -135,7 +135,7 @@ change, but I think this is the right default.
 
 ## Step 8 — Version in Settings
 
-**Expected:** the About card reads **Muslim App v1.1.0**, and lists the new
+**Expected:** the About card reads **Mihrab v1.1.0**, and lists the new
 attributions — adhan (MIT) and GeoNames (CC-BY 4.0) — alongside Tanzil and
 Amiri.
 

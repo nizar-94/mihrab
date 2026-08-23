@@ -1,4 +1,4 @@
-# Muslim App
+# Mihrab
 
 A Windows system-tray app that shows a random or sequential Quran verse as a
 custom desktop notification, on a schedule you choose. Fully offline — no
@@ -6,8 +6,8 @@ servers, no accounts, no telemetry.
 
 ## Download
 
-Grab the latest `Muslim App-Setup-<version>.exe` from the
-[Releases page](https://github.com/nizar-94/muslim-app/releases) and run it.
+Grab the latest `Mihrab-Setup-<version>.exe` from the
+[Releases page](https://github.com/nizar-94/mihrab/releases) and run it.
 
 Windows 10/11 only, 64-bit. It installs per-user, so there is no admin
 prompt, and it adds a Start Menu entry rather than a desktop icon — the app
@@ -21,13 +21,16 @@ code-signed, so Windows has no publisher identity to check it against. See
 about it. Nothing about the warning is specific to this app; any unsigned
 installer gets it.
 
+Everything works offline. The only times the app uses the network are the
+update check and, if you ask for one, downloading a translation.
+
 The app updates itself. It checks for a new release shortly after launch and
 every six hours after that, downloads in the background, and installs the
 next time you quit — it will never restart itself while you are using it.
 You can also check on demand from the tray menu.
 
-To uninstall: Settings → Apps → Installed apps → Muslim App, or the
-`Uninstall Muslim App` entry in the install folder.
+To uninstall: Settings → Apps → Installed apps → Mihrab, or the
+`Uninstall Mihrab` entry in the install folder.
 
 ## Features
 

@@ -2,7 +2,7 @@ import Store from 'electron-store';
 import path from 'node:path';
 import fs from 'node:fs';
 import electron from 'electron';
-import { validateSchedule, validateQuietHours, validateNotification, validateLocation, validatePrayer } from './validate.js';
+import { validateSchedule, validateQuietHours, validateNotification, validateLocation, validatePrayer, validateFasting, validateAzkar, validateLanguage } from './validate.js';
 import {
   DEFAULT_METHOD,
   DEFAULT_SCHOOL,
@@ -10,6 +10,8 @@ import {
   DEFAULT_POLAR_RESOLUTION
 } from './prayer/methods.js';
 import { DEFAULT_PER_PRAYER } from './prayer/schedule.js';
+import { DEFAULT_FASTING } from './fasting.js';
+import { DEFAULT_AZKAR } from './azkar.js';
 
 // Default (non-named) import: under a real Electron main process this is the
 // Electron API object; under plain Node (e.g. this file loaded by Vitest)
@@ -66,15 +68,40 @@ export const DEFAULT_CONFIG = {
 
   // --- Schema v2: location and prayer times ---------------------------
   //
-  // null until the user picks somewhere. Prayer, athan and fasting features
-  // stay disabled while it is null rather than guessing — a wrong location
-  // produces confidently wrong prayer times, which is worse than none.
-  // Verse reminders never depend on it.
+  // null means "not chosen yet", and it stays a real state rather than
+  // being papered over with a default city.
+  //
+  // A hardcoded default was tried and reverted (2026-08-24): defaulting to
+  // one city gives every user elsewhere in the world confidently wrong
+  // prayer times, which is worse than none. Asking once on first run is
+  // better than guessing forever — see FIRST-RUN below and index.js.
+  //
+  // Because the app now asks, the features that DEPEND on a location can
+  // all be enabled by default: the user will have set one before anything
+  // needs it, and every provider is still location-gated as a safety net
+  // if they dismiss the prompt.
   //
   // The COORDINATES are the source of truth; `name` is only a display
   // label. Nothing re-resolves a name to a position at runtime.
   /** @type {{name:string, latitude:number, longitude:number, timezone:string}|null} */
   location: null,
+
+  // Settings UI language. Affects the Settings window only — the verse,
+  // prayer and adhkar cards are already Arabic-first by nature, and the
+  // Quran text is never translated by this setting.
+  //
+  // Arabic by default (2026-08-24 decision). The app's content is Arabic
+  // throughout — the Quran text, the prayer names, the adhkar — so an
+  // English chrome around it was the odd one out, and the audience most
+  // likely to install this reads Arabic. English is one switch away in
+  // General for anyone who prefers it.
+  language: 'ar',
+
+  // FIRST-RUN. False until the user has been shown the location prompt,
+  // so it appears once rather than on every launch. Separate from
+  // `location` being null, because someone who deliberately dismissed the
+  // prompt should not be nagged every time the app starts.
+  onboarded: false,
 
   prayer: {
     method: DEFAULT_METHOD,
@@ -86,7 +113,18 @@ export const DEFAULT_CONFIG = {
     // correction" — see prayer/methods.js paramsFor().
     offsets: {},
     perPrayer: structuredClone(DEFAULT_PER_PRAYER)
-  }
+  },
+
+  // Every fast is off by default. These are recommended (nafl) fasts, not
+  // obligations, and an app that starts nagging about them uninvited is
+  // presumptuous — the user opts into the ones they actually keep.
+  // Requires a location, for the same reason prayer times do: both the
+  // Hijri day and the weekday depend on the user's timezone.
+  fasting: structuredClone(DEFAULT_FASTING),
+
+  // Also location-gated: adhkar anchor to prayer times, so without
+  // coordinates there is nothing to anchor to.
+  azkar: structuredClone(DEFAULT_AZKAR)
 };
 
 export function migrate(raw) {
@@ -108,6 +146,16 @@ export function migrate(raw) {
       ...(raw.prayer ?? {}),
       offsets: { ...(raw.prayer?.offsets ?? {}) },
       perPrayer: { ...DEFAULT_PER_PRAYER, ...(raw.prayer?.perPrayer ?? {}) }
+    },
+    fasting: { ...DEFAULT_FASTING, ...(raw.fasting ?? {}) },
+    azkar: {
+      ...DEFAULT_AZKAR,
+      ...(raw.azkar ?? {}),
+      morning: { ...DEFAULT_AZKAR.morning, ...(raw.azkar?.morning ?? {}) },
+      evening: { ...DEFAULT_AZKAR.evening, ...(raw.azkar?.evening ?? {}) },
+      position: { ...DEFAULT_AZKAR.position, ...(raw.azkar?.position ?? {}) },
+      disabled: Array.isArray(raw.azkar?.disabled) ? raw.azkar.disabled : [],
+      custom: Array.isArray(raw.azkar?.custom) ? raw.azkar.custom : []
     }
   };
   const pos = merged.sequencePosition;
@@ -146,6 +194,14 @@ export function migrate(raw) {
 
   const prayerResult = validatePrayer(merged.prayer);
   merged.prayer = prayerResult.ok ? prayerResult.value : structuredClone(DEFAULT_CONFIG.prayer);
+
+  const fastingResult = validateFasting(merged.fasting);
+  merged.fasting = fastingResult.ok ? fastingResult.value : structuredClone(DEFAULT_CONFIG.fasting);
+
+  const azkarResult = validateAzkar(merged.azkar);
+  merged.azkar = azkarResult.ok ? azkarResult.value : structuredClone(DEFAULT_CONFIG.azkar);
+
+  merged.language = validateLanguage(merged.language).value;
 
   // A corrupt, non-null lastFiredAt (e.g. 'garbage') is truthy but parses to
   // an Invalid Date. shouldFire() would then compare NaN against `now` on
@@ -267,7 +323,40 @@ function backupIfCorrupt() {
   try {
     fs.renameSync(configPath, backupPath);
   } catch (err) {
-    console.error('muslim-app: failed to back up corrupt config.json', err);
+    console.error('mihrab: failed to back up corrupt config.json', err);
+  }
+}
+
+// Config path before the app was renamed from "Mihrab" to "Mihrab".
+//
+// electron-store derives its directory from the app name, so the rename
+// moves userData from %APPDATA%\mihrab to %APPDATA%\mihrab. Without
+// this, every existing user's settings — location, prayer method, offsets,
+// reading position — would appear to vanish on upgrade, with the old file
+// sitting untouched next door.
+//
+// One-time, copy-not-move, and only when the new location is genuinely
+// empty: if anything goes wrong the original is still there to fall back
+// on, and a user who has already configured the renamed app never has it
+// overwritten by a stale file.
+const LEGACY_APP_DIR = 'muslim-app';
+
+function migrateLegacyConfig() {
+  if (!app || typeof app.getPath !== 'function') return;
+  try {
+    const current = path.join(app.getPath('userData'), 'config.json');
+    if (fs.existsSync(current)) return; // already configured under the new name
+
+    const legacy = path.join(path.dirname(app.getPath('userData')), LEGACY_APP_DIR, 'config.json');
+    if (!fs.existsSync(legacy)) return;
+
+    fs.mkdirSync(path.dirname(current), { recursive: true });
+    fs.copyFileSync(legacy, current);
+    console.log(`mihrab: carried settings over from ${legacy}`);
+  } catch (err) {
+    // Never fatal. Losing the old settings is a bad day; failing to start
+    // is a worse one, and the app is perfectly usable from defaults.
+    console.error('mihrab: could not carry over previous settings', err);
   }
 }
 
@@ -275,6 +364,7 @@ let store;
 
 function getStore() {
   if (!store) {
+    migrateLegacyConfig();
     backupIfCorrupt();
     // clearInvalidConfig: without this, `conf` (which electron-store wraps)
     // lets the constructor's own initial read throw a raw SyntaxError for a
@@ -293,7 +383,7 @@ export function getConfig() {
   try {
     return migrate(getStore().get('config'));
   } catch (err) {
-    console.error('muslim-app: failed to read config, using defaults', err);
+    console.error('mihrab: failed to read config, using defaults', err);
     return structuredClone(DEFAULT_CONFIG);
   }
 }

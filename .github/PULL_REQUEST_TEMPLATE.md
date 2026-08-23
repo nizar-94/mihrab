@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to Muslim App! A few things before you open this PR:
+Thanks for contributing to Mihrab! A few things before you open this PR:
 -->
 
 ## What does this change do?

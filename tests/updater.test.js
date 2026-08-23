@@ -109,7 +109,7 @@ describe('statusLabel', () => {
     [UpdateStatus.DOWNLOADING, { percent: 33.2 }, 'Downloading update (33%)…'],
     [UpdateStatus.DOWNLOADING, {}, 'Downloading update…'],
     [UpdateStatus.DOWNLOADED, { version: '1.2.0' }, 'Update ready (v1.2.0) — installs next time you quit'],
-    [UpdateStatus.NOT_AVAILABLE, {}, 'Muslim App is up to date'],
+    [UpdateStatus.NOT_AVAILABLE, {}, 'Mihrab is up to date'],
     [UpdateStatus.ERROR, {}, 'Update check failed — will retry automatically']
   ])('renders %s correctly', (status, extra, expected) => {
     expect(statusLabel({ ...initialUpdateState(), status, ...extra })).toBe(expected);
