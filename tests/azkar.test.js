@@ -146,7 +146,10 @@ describe('nextAzkarFire', () => {
   });
 
   it('fires the configured offset after the anchor prayer', () => {
-    const after = new Date('2026-08-22T22:00:00Z'); // just after local midnight
+    // Midday UTC, deliberately far from any day boundary: an instant near
+    // local midnight makes this assertion depend on the HOST's timezone,
+    // which is how the CI runner (UTC) disagreed with a UTC+3 laptop.
+    const after = new Date('2026-08-23T00:30:00Z');
     const fire = nextAzkarFire(after, JERUSALEM, PRAYER, config({
       morning: { enabled: true, anchor: 'fajr', offsetMinutes: 30 }
     }));
@@ -154,6 +157,19 @@ describe('nextAzkarFire', () => {
 
     const times = prayerTimes(JERUSALEM, after, PRAYER);
     expect(fire.at.getTime() - times.fajr.getTime()).toBe(30 * 60_000);
+  });
+
+  it(`uses the LOCATION timezone to pick the day, not the host machine`, () => {
+    // The bug this guards: adhan reads the calendar day off the Date using
+    // the host's local getters. Someone in London with their location set
+    // to Jerusalem is already on tomorrow's date there from 22:00 London
+    // time, and would otherwise get the wrong day's times every night.
+    const lateInJerusalem = new Date('2026-08-23T21:30:00Z'); // 00:30 on the 24th, Jerusalem
+    const withZone = prayerTimes(JERUSALEM, lateInJerusalem, PRAYER);
+    const nextDayNoon = prayerTimes(JERUSALEM, new Date('2026-08-24T09:00:00Z'), PRAYER);
+    // Both must resolve to the SAME local day in Jerusalem.
+    expect(formatPrayerTime(withZone.fajr, JERUSALEM.timezone))
+      .toBe(formatPrayerTime(nextDayNoon.fajr, JERUSALEM.timezone));
   });
 
   it('tracks the anchor rather than a fixed clock time', () => {
