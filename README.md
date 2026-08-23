@@ -6,14 +6,11 @@ servers, no telemetry.
 
 **[⬇ Download the latest release](https://github.com/nizar-94/mihrab/releases/latest)**
 
-<!-- SCREENSHOTS: drop the files into docs/screenshots/ and delete the two
-     comment markers around this block (and around the table further down)
-     to show them. They are hidden until the files exist, because a broken
-     image is worse than no image.
 <p align="center">
-  <img src="docs/screenshots/verse-card.png" alt="A Qur'an verse notification with translation and khitmah progress" width="420">
+  <img src="docs/screenshots/verse-card.png" alt="A Qur'an verse card appearing over a terminal while a build runs" width="560">
+  <br>
+  <em>A verse arriving while something else is compiling.</em>
 </p>
--->
 
 ---
 
@@ -71,18 +68,21 @@ servers, no telemetry.
 
 ---
 
-<!-- SCREENSHOTS: see the note near the top.
 ## Screenshots
 
 | | |
 |---|---|
-| ![Prayer times settings](docs/screenshots/settings-athan.png) | ![Adhkar settings](docs/screenshots/settings-azkar.png) |
-| Prayer times, per-prayer control and today's times | Adhkar, anchored to prayer times and editable |
-| ![Prayer reminder](docs/screenshots/prayer-card.png) | ![Fasting reminder](docs/screenshots/fasting-card.png) |
-| A prayer reminder | A fasting reminder, the day before |
+| <img src="docs/screenshots/settings-athan.png" alt="Prayer times settings" width="380"> | <img src="docs/screenshots/settings-azkar.png" alt="Adhkar settings" width="380"> |
+| **Prayer times** — method, Asr school, per-prayer control, and today's times in the last column | **Adhkar** — anchored to a prayer with an offset, and every dhikr individually switchable |
+
+<p align="center">
+  <img src="docs/screenshots/prayer-card.png" alt="A Maghrib prayer reminder" width="440">
+  <br>
+  <em>A prayer reminder. The badge marks it as one of the built-in samples —
+  real ones look identical without it.</em>
+</p>
 
 ---
--->
 
 ## Install
 
