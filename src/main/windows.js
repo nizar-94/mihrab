@@ -100,8 +100,10 @@ export function positionNotificationWindow(win, contentHeight) {
 
 export function createSettingsWindow() {
   return new BrowserWindow({
-    width: 520,
-    height: 640,
+    // Widened from 520 when Settings moved to a vertical sidebar: the nav
+    // takes 132px, and the per-prayer table needs the rest.
+    width: 660,
+    height: 660,
     resizable: false,
     autoHideMenuBar: true,
     show: false,

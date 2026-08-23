@@ -14,8 +14,15 @@ function measureHeight() {
   return Math.ceil(rect.height + marginTop + marginBottom);
 }
 
-window.verseAPI.onVerse(({ ayah, sound }) => {
+window.verseAPI.onVerse(({ ayah, sound, notification }) => {
   const ayahEl = document.getElementById('ayah');
+  // Applied before the long/xlong classes and before measureHeight() below:
+  // the measured height must reflect the size actually being rendered, or
+  // the window is sized for the wrong font and the card is clipped or
+  // floats in empty space.
+  if (notification?.verseFontSize) {
+    document.documentElement.style.setProperty('--verse-size', `${notification.verseFontSize}px`);
+  }
   ayahEl.textContent = ayah.text;
   // Long-ayah font stepping (see the .ayah.long/.xlong rules in index.html):
   // must happen before measureHeight() runs below, so the measured height
@@ -44,6 +51,40 @@ window.verseAPI.onVerse(({ ayah, sound }) => {
         // CSS transition here means it plays out as (or just after) the
         // window becomes visible, instead of finishing invisibly while the
         // window is still hidden.
+        card.classList.add('show');
+      });
+    });
+  });
+});
+
+// Prayer cards reuse this window, the same measurement path and the same
+// dismiss/pin/hover behaviour — only the content differs. The verse block
+// is hidden rather than emptied so that a stale ayah can never flash behind
+// the prayer content during the pre-show frame.
+window.verseAPI.onPrayer(({ prayer, sound }) => {
+  document.getElementById('ayah').classList.add('hidden');
+  document.getElementById('ref').classList.add('hidden');
+  document.getElementById('prayer').classList.remove('hidden');
+
+  document.getElementById('prayer-ar').textContent = prayer.ar;
+  document.getElementById('prayer-en').textContent =
+    prayer.kind === 'before' ? `${prayer.en} soon` : `It is time for ${prayer.en}`;
+  document.getElementById('prayer-time').textContent = prayer.time ?? '';
+  document.getElementById('prayer-loc').textContent = prayer.location ?? '';
+
+  if (sound.enabled) {
+    const chime = document.getElementById('chime');
+    chime.volume = sound.volume;
+    chime.play().catch(() => {});
+  }
+
+  // Identical settle-then-measure dance as the verse path above: the Amiri
+  // webfont must have loaded before the height is measured, or the card is
+  // sized for a fallback font and ends up the wrong height on screen.
+  document.fonts.ready.then(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.verseAPI.reportSize(measureHeight());
         card.classList.add('show');
       });
     });

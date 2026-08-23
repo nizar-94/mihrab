@@ -275,6 +275,174 @@
     }
     .btn.primary:hover { background: var(--accent-strong); }
 
+    .hidden { display: none; }
+
+    /* ---- tabs ----
+       A VERTICAL sidebar rather than a horizontal strip: four sections fit
+       across the top, but azkar, fasting and translations are still to
+       come, and eight horizontal tabs in a 640px window would either wrap
+       or shrink to unreadable. A column grows down the side indefinitely. */
+    .body-row {
+      flex: 1 1 auto;
+      display: flex;
+      min-height: 0; /* lets .content scroll instead of stretching the row */
+    }
+    .tabs {
+      flex: none;
+      width: 132px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 14px 8px;
+      border-right: 1px solid var(--border);
+      background: var(--bg);
+      overflow-y: auto;
+    }
+    .tab {
+      flex: none;
+      text-align: start;
+      background: transparent;
+      border: none;
+      border-left: 2px solid transparent;
+      border-radius: 0 6px 6px 0;
+      padding: 9px 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+    .tab:hover { color: var(--text); background: var(--surface); }
+    .tab[aria-selected='true'] {
+      color: var(--accent-strong);
+      border-left-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .pane select,
+    .row select {
+      width: 100%;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 9px;
+      font: inherit;
+    }
+
+    /* Text and number inputs inside .row were unstyled, so they fell back
+       to a white browser default while `button, input { color: inherit }`
+       made their text near-white — invisible. The .pane rules above cover
+       the schedule fields but not these, which is easy to miss because
+       every OTHER input on the page happens to be covered by something. */
+    .row input[type='text'],
+    .row input[type='number'] {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: var(--text);
+    }
+    .row input::placeholder { color: var(--text-muted); opacity: .7; }
+
+    /* ---- stepper ---- */
+    .stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .step {
+      width: 26px;
+      height: 24px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 120ms ease;
+    }
+    .step:hover:not(:disabled) { background: var(--surface-hover); }
+    /* Disabled rather than hidden at the limits: a button that vanishes
+       makes the control jump under the cursor. */
+    .step:disabled { opacity: .3; cursor: default; }
+    .step-value {
+      min-width: 30px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-muted);
+      font-size: 12.5px;
+    }
+    /* Live sample at the real size, so the number means something. Same
+       font and colour as the notification card. */
+    .verse-sample {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #12261f;
+      border: 1px solid var(--border);
+      font-family: 'Amiri Quran', serif;
+      line-height: 2;
+      color: #f4f1e8;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    /* Search results. Capped and scrollable rather than growing without
+       bound — a two-letter query legitimately matches hundreds of cities,
+       and a list that pushes the rest of Settings off-screen is worse than
+       one you scroll. */
+    .city-results { max-height: 168px; overflow-y: auto; margin: 6px 0; }
+    .city-results:empty { display: none; }
+    .city-result {
+      display: block; width: 100%; text-align: start;
+      background: transparent; border: 1px solid transparent;
+      border-radius: 8px; padding: 6px 9px;
+      color: var(--text); font: inherit; cursor: pointer;
+    }
+    .city-result:hover, .city-result:focus-visible {
+      background: var(--surface-hover); border-color: var(--border);
+    }
+    .city-result .sub { display: block; font-size: 11.5px; color: var(--text-muted); }
+
+    .prayer-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12.5px; }
+    .prayer-table th {
+      text-align: start; font-weight: 500; color: var(--text-muted);
+      font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+      padding: 0 4px 6px;
+    }
+    .prayer-table td { padding: 4px; border-top: 1px solid var(--border); }
+    .prayer-table td:first-child { white-space: nowrap; }
+    /* Tabular figures so the times column does not jitter as values change. */
+    .prayer-table .time { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+    .prayer-table input[type='number'] {
+      width: 56px; background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px; padding: 3px 5px; font: inherit;
+    }
+    .prayer-table input[type='checkbox'] { accent-color: var(--accent); }
+    .prayer-ar { font-family: 'Amiri Quran', serif; font-size: 15px; }
+
+    /* The whole prayer pane greys out until a location exists, rather than
+       being hidden — a control you can see but not use explains itself; one
+       that is absent just looks like a missing feature. */
+    #prayerBody.disabled { opacity: .4; pointer-events: none; }
+
+    /* Fixed label column for the three dropdowns. Without it the flex
+       label shrinks and "Calculation method" wraps to two lines, leaving
+       the three rows visibly misaligned. Scoped to this pane so the
+       schedule and quiet-hours rows keep their own tighter layout. */
+    #prayerBody > .row { margin-bottom: 8px; }
+    #prayerBody > .row > label { flex: 0 0 118px; }
+
+    .version { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; }
     }
@@ -286,7 +454,16 @@
     <div class="eyebrow">Settings</div>
   </header>
 
+  <div class="body-row">
+  <nav class="tabs" role="tablist" aria-label="Settings sections">
+    <button type="button" class="tab" role="tab" id="tab-quran" aria-controls="pane-quran" aria-selected="true">Qur'an</button>
+    <button type="button" class="tab" role="tab" id="tab-athan" aria-controls="pane-athan" aria-selected="false">Athan</button>
+    <button type="button" class="tab" role="tab" id="tab-general" aria-controls="pane-general" aria-selected="false">General</button>
+    <button type="button" class="tab" role="tab" id="tab-about" aria-controls="pane-about" aria-selected="false">About</button>
+  </nav>
+
   <main class="content">
+    <div class="pane-section" id="pane-quran" role="tabpanel" aria-labelledby="tab-quran">
     <section class="card">
       <h2 class="label">Schedule</h2>
       <div class="segmented" role="radiogroup" aria-label="Schedule mode">
@@ -333,6 +510,20 @@
         <label for="qhTo">To</label>
         <input type="time" id="qhTo" />
       </div>
+      <p class="muted">Silences verse reminders only. Prayer reminders still come through — an overnight window would otherwise hide Fajr and Isha.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="label">Verse text size</h2>
+      <div class="row between">
+        <span class="muted">Size of the Arabic text on the notification card</span>
+        <div class="stepper">
+          <button type="button" id="fontDown" class="step" aria-label="Decrease verse text size">&minus;</button>
+          <span id="fontValue" class="step-value" aria-live="polite">22</span>
+          <button type="button" id="fontUp" class="step" aria-label="Increase verse text size">+</button>
+        </div>
+      </div>
+      <div class="verse-sample" id="verseSample" lang="ar" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
     </section>
 
     <section class="card">
@@ -353,6 +544,82 @@
       </div>
     </section>
 
+    </div>
+
+    <div class="pane-section hidden" id="pane-athan" role="tabpanel" aria-labelledby="tab-athan">
+    <section class="card">
+      <h2 class="label">Location</h2>
+      <p class="muted">Prayer times are calculated on your machine from these coordinates. Nothing is sent anywhere.</p>
+      <div class="row">
+        <label for="citySearch">Search for your city</label>
+        <input type="text" id="citySearch" placeholder="e.g. Jerusalem, Cairo, London" autocomplete="off" />
+      </div>
+      <div id="cityResults" class="city-results"></div>
+      <div class="row between">
+        <span id="currentLocation" class="muted">No location set</span>
+        <button type="button" id="manualToggle" class="btn ghost small">Enter coordinates</button>
+      </div>
+      <div id="manualPane" class="hidden">
+        <div class="row">
+          <label for="manualLat">Latitude</label>
+          <input type="number" id="manualLat" step="0.0001" min="-90" max="90" placeholder="31.7683" />
+        </div>
+        <div class="row">
+          <label for="manualLon">Longitude</label>
+          <input type="number" id="manualLon" step="0.0001" min="-180" max="180" placeholder="35.2137" />
+        </div>
+        <div class="row">
+          <label for="manualName">Label</label>
+          <input type="text" id="manualName" placeholder="Home" />
+        </div>
+        <button type="button" id="manualApply" class="btn ghost small">Use these coordinates</button>
+      </div>
+    </section>
+
+    <section class="card" id="prayerCard">
+      <h2 class="label">Prayer times</h2>
+      <p class="muted" id="prayerNoLocation">Set a location above to enable prayer reminders.</p>
+
+      <div id="prayerBody">
+        <div class="row">
+          <label for="prayerMethod">Calculation method</label>
+          <select id="prayerMethod"></select>
+        </div>
+        <div class="row">
+          <label for="prayerSchool">Asr calculation</label>
+          <select id="prayerSchool"></select>
+        </div>
+        <div class="row">
+          <label for="prayerHlr">High latitude rule</label>
+          <select id="prayerHlr"></select>
+        </div>
+        <p class="muted">Only affects places far from the equator, where twilight can last all night.</p>
+
+        <table class="prayer-table">
+          <thead>
+            <tr>
+              <th scope="col">Prayer</th>
+              <th scope="col" title="Remind me about this prayer at all">On</th>
+              <th scope="col" title="Notify at the prayer time itself">On time</th>
+              <th scope="col" title="Also notify this many minutes early">Early</th>
+              <th scope="col" title="Shift this prayer to match your local mosque">Adjust</th>
+              <th scope="col">Today</th>
+            </tr>
+          </thead>
+          <tbody id="prayerRows"></tbody>
+        </table>
+        <p class="muted">
+          <strong>On time</strong> notifies at the prayer time itself.
+          <strong>Early</strong> adds a separate warning that many minutes beforehand —
+          set both to get two notifications, or turn off “On time” to get only the warning.
+          <strong>Adjust</strong> shifts a prayer by up to 59 minutes to match your local mosque.
+        </p>
+      </div>
+    </section>
+
+    </div>
+
+    <div class="pane-section hidden" id="pane-general" role="tabpanel" aria-labelledby="tab-general">
     <section class="card">
       <div class="card-head">
         <h2 class="label">Sound</h2>
@@ -378,8 +645,19 @@
       <p class="muted">Start Muslim App automatically when you sign in to Windows.</p>
     </section>
 
+    </div>
+
+    <div class="pane-section hidden" id="pane-about" role="tabpanel" aria-labelledby="tab-about">
     <section class="card about">
       <h2 class="label">About</h2>
+      <p class="version" id="appVersion">Muslim App</p>
+      <p>
+        Prayer times calculated locally with
+        <a href="https://github.com/batoulapps/adhan-js" target="_blank" rel="noopener noreferrer">adhan</a>
+        (MIT). City coordinates from
+        <a href="https://www.geonames.org" target="_blank" rel="noopener noreferrer">GeoNames</a>,
+        used under Creative Commons Attribution 4.0 (CC-BY 4.0).
+      </p>
       <p>
         Quran text from the
         <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>
@@ -391,7 +669,9 @@
         SIL Open Font License 1.1.
       </p>
     </section>
+    </div>
   </main>
+  </div>
 
   <footer class="footer">
     <div id="error" class="error" role="alert"></div>

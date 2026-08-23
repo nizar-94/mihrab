@@ -132,3 +132,11 @@ past contributor for permission.
 
 If you are opening your first pull request, say so and the CLA process will be
 sorted out with you.
+
+## Author
+
+Built and maintained by **Nizar Hawawreh** — [@nizar-94](https://github.com/nizar-94).
+
+Copyright © Nizar Hawawreh. Licensed under GPL-3.0-or-later; the bundled
+Quran text, font and city data carry their own licences, listed in
+[`NOTICE`](./NOTICE).

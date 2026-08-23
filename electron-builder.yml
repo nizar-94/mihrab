@@ -51,9 +51,14 @@ files:
   # simply an oversight.
   - '!signatures/**'
   - '!task-verification/**'
-  # resources/icons/** (tray.png, app.png) stays in the default set and is
-  # packed into app.asar — see src/main/tray.js (tray icon) and
-  # src/main/windows.js (taskbar/window icon) for why that is fine.
+  # resources/icons/** — app.png plus the tray-light-*/tray-dark-* pair —
+  # stays in the default set and is packed into app.asar. See
+  # src/main/tray.js (theme-aware tray icon) and src/main/windows.js
+  # (taskbar/window icon) for why reading them from inside the archive is
+  # fine. The logo masters in build/logo/ are NOT packed: build/ is the
+  # buildResources directory, which electron-builder excludes from the app
+  # by default. Only build/icon.ico is consumed, at build time, for the
+  # installer and .exe.
   - '!resources/fonts/**'
   - '!resources/sounds/**'
   # Fonts and the notification sound are already consumed at build time:
@@ -63,6 +68,11 @@ files:
   # copies under resources/ are dev-time-only inputs and would just be
   # dead weight in the package.
   - '!resources/quran-uthmani.json'
+  - '!resources/cities.json'
+  # The ~2.3 MB GeoNames city database, same treatment as the Quran dataset
+  # below and for the same reasons: a large blob, read once on the first
+  # city search and never by application code paths that benefit from being
+  # inside the archive. See src/main/location/cities.js.
   # The ~1.8 MB Quran dataset is intentionally EXCLUDED from the asar
   # archive and shipped instead via extraResources below, landing beside
   # the app (process.resourcesPath) rather than inside app.asar. See
@@ -71,6 +81,8 @@ files:
 extraResources:
   - from: resources/quran-uthmani.json
     to: quran-uthmani.json
+  - from: resources/cities.json
+    to: cities.json
 
 asar: true
 

@@ -9,8 +9,9 @@
 // the real ones.
 import electron from 'electron';
 import { join } from 'path';
+import { readFileSync } from 'node:fs';
 
-const { Tray, Menu, nativeImage, app } = electron;
+const { Tray, Menu, nativeImage, app, nativeTheme } = electron;
 
 // state shape: { paused: boolean, failing: boolean, errorLabel: string|null,
 //                updateLabel: string|null, version: string|null }
@@ -90,19 +91,47 @@ export function tooltipFor(state) {
   return 'Muslim App';
 }
 
-// tray.png is a few-KB 32x32 icon, unlike the ~1.8 MB Quran dataset in
-// quran.js — there's no size/perf reason to keep it out of app.asar, so it
-// stays packed inside the archive (see the `files` list in
+// The tray icons are a few KB each, unlike the ~1.8 MB Quran dataset in
+// quran.js — there's no size/perf reason to keep them out of app.asar, so
+// they stay packed inside the archive (see the `files` list in
 // electron-builder.yml, which keeps resources/icons/** in the default set).
-// No dev/packaged branch is needed here: nativeImage.createFromPath is one
-// of the Electron APIs documented to read transparently from inside an
-// asar archive, so app.getAppPath() joined with the resource's relative
-// path resolves correctly in both cases — in dev it's a real directory, in
-// a packaged app it's ".../resources/app.asar/resources/icons/tray.png",
-// which Electron treats as a virtual path into the archive.
+// No dev/packaged branch is needed: both fs.readFileSync and
+// nativeImage.createFromPath read transparently from inside an asar
+// archive, so app.getAppPath() joined with the resource's relative path
+// resolves in both cases — in dev it's a real directory, in a packaged app
+// it's ".../resources/app.asar/resources/icons/...", which Electron treats
+// as a virtual path into the archive.
+//
+// Two variants ship, and the naming is about the COLOUR OF THE ICON, not
+// the theme it belongs to: `tray-light-*` has a cream (#F2F1EE) finial and
+// base, so it reads against a DARK taskbar (Windows' default); `tray-dark-*`
+// uses near-black (#16161A) for a light taskbar. Picking the wrong one
+// makes two thirds of the mark disappear into the background — only the
+// gold dome would remain visible.
+function trayImage() {
+  const variant = nativeTheme?.shouldUseDarkColors ? 'light' : 'dark';
+  const dir = join(app.getAppPath(), 'resources/icons');
+  // 16px is the base; 24 and 32 are the designer's own exports for 150% and
+  // 200% display scaling. Supplying them as real representations beats
+  // handing Electron one 32px file to downscale, which is what visibly
+  // softens tray icons on 100%-scaling displays.
+  const image = nativeImage.createFromPath(join(dir, `tray-${variant}-16.png`));
+  for (const size of [24, 32]) {
+    try {
+      image.addRepresentation({
+        scaleFactor: size / 16,
+        buffer: readFileSync(join(dir, `tray-${variant}-${size}.png`))
+      });
+    } catch {
+      // A missing high-DPI export must never stop the tray icon existing —
+      // the app is unusable without it. The 16px base is already loaded.
+    }
+  }
+  return image;
+}
+
 export function createTray(handlers) {
-  const icon = nativeImage.createFromPath(join(app.getAppPath(), 'resources/icons/tray.png'));
-  const tray = new Tray(icon);
+  const tray = new Tray(trayImage());
   tray.setToolTip(tooltipFor(DEFAULT_STATE));
   tray.setContextMenu(buildMenu(handlers, DEFAULT_STATE));
   // Double-click opens Settings — the conventional Windows tray gesture,
@@ -110,6 +139,12 @@ export function createTray(handlers) {
   // deliberately left alone: on Windows a single left click is what opens
   // the context menu, so binding anything to it would fight the menu.
   tray.on('double-click', () => handlers.onSettings());
+  // Windows lets the user switch between light and dark taskbars at any
+  // time, without restarting anything. Swap the variant when that happens,
+  // or the icon silently half-vanishes until the next launch.
+  nativeTheme?.on?.('updated', () => {
+    if (!tray.isDestroyed()) tray.setImage(trayImage());
+  });
   return tray;
 }
 

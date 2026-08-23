@@ -1,0 +1,154 @@
+import { describe, it, expect } from 'vitest';
+import { validateLocation, validatePrayer } from '../src/main/validate.js';
+import { migrate, DEFAULT_CONFIG } from '../src/main/config.js';
+import { DEFAULT_PER_PRAYER } from '../src/main/prayer/schedule.js';
+
+describe('validateLocation', () => {
+  const valid = { name: 'Jerusalem', latitude: 31.7683, longitude: 35.2137, timezone: 'Asia/Jerusalem' };
+
+  it('accepts a well-formed location', () => {
+    expect(validateLocation(valid)).toEqual({ ok: true, value: valid });
+  });
+
+  it('treats null as valid — "nowhere chosen yet" is the state every user starts in', () => {
+    expect(validateLocation(null)).toEqual({ ok: true, value: null });
+  });
+
+  it('rejects out-of-range coordinates', () => {
+    expect(validateLocation({ ...valid, latitude: 91 }).ok).toBe(false);
+    expect(validateLocation({ ...valid, latitude: -91 }).ok).toBe(false);
+    expect(validateLocation({ ...valid, longitude: 181 }).ok).toBe(false);
+    expect(validateLocation({ ...valid, longitude: -181 }).ok).toBe(false);
+  });
+
+  it('accepts the exact extremes', () => {
+    expect(validateLocation({ ...valid, latitude: 90, longitude: 180 }).ok).toBe(true);
+    expect(validateLocation({ ...valid, latitude: -90, longitude: -180 }).ok).toBe(true);
+  });
+
+  it('rejects an unknown timezone before it can throw on a scheduler tick', () => {
+    // Intl throws a RangeError on an unknown zone. Catching it here turns a
+    // crash deep in the scheduler into a visible settings error.
+    expect(validateLocation({ ...valid, timezone: 'Mars/Olympus' }).ok).toBe(false);
+    expect(validateLocation({ ...valid, timezone: '' }).ok).toBe(false);
+    expect(validateLocation({ ...valid, timezone: 42 }).ok).toBe(false);
+  });
+
+  it('rejects a blank name', () => {
+    expect(validateLocation({ ...valid, name: '   ' }).ok).toBe(false);
+    expect(validateLocation({ ...valid, name: undefined }).ok).toBe(false);
+  });
+
+  it('trims the name and coerces numeric strings', () => {
+    const r = validateLocation({ ...valid, name: '  Gaza  ', latitude: '31.5', longitude: '34.4' });
+    expect(r.value.name).toBe('Gaza');
+    expect(r.value.latitude).toBe(31.5);
+  });
+});
+
+describe('validatePrayer', () => {
+  const valid = {
+    method: 'MuslimWorldLeague',
+    school: 'standard',
+    highLatitudeRule: 'recommended',
+    polarCircleResolution: 'AqrabBalad',
+    offsets: {},
+    perPrayer: DEFAULT_PER_PRAYER
+  };
+
+  it('accepts a well-formed config', () => {
+    expect(validatePrayer(valid).ok).toBe(true);
+  });
+
+  it('falls back to defaults for unknown ids rather than rejecting everything', () => {
+    // A config naming a method removed in a later version should cost the
+    // user their method choice, not every prayer setting they have.
+    const r = validatePrayer({ ...valid, method: 'NoSuchMethod', school: 'nonsense' });
+    expect(r.ok).toBe(true);
+    expect(r.value.method).toBe(DEFAULT_CONFIG.prayer.method);
+    expect(r.value.school).toBe(DEFAULT_CONFIG.prayer.school);
+  });
+
+  it('accepts the Palestine preset as a real method', () => {
+    expect(validatePrayer({ ...valid, method: 'PalestineLegacy' }).value.method).toBe('PalestineLegacy');
+  });
+
+  it('rejects offsets that are not whole minutes, or out of range', () => {
+    expect(validatePrayer({ ...valid, offsets: { asr: 1.5 } }).ok).toBe(false);
+    expect(validatePrayer({ ...valid, offsets: { asr: 60 } }).ok).toBe(false);
+    expect(validatePrayer({ ...valid, offsets: { asr: -60 } }).ok).toBe(false);
+  });
+
+  it('accepts offsets at the edge of the range, including negative', () => {
+    expect(validatePrayer({ ...valid, offsets: { asr: 59, fajr: -59 } }).ok).toBe(true);
+  });
+
+  it('rejects a lead time outside 0..120', () => {
+    const perPrayer = { ...DEFAULT_PER_PRAYER, fajr: { enabled: true, remindAt: true, remindBefore: 121 } };
+    expect(validatePrayer({ ...valid, perPrayer }).ok).toBe(false);
+    const negative = { ...DEFAULT_PER_PRAYER, fajr: { enabled: true, remindAt: true, remindBefore: -1 } };
+    expect(validatePrayer({ ...valid, perPrayer: negative }).ok).toBe(false);
+  });
+
+  it('normalises perPrayer booleans, defaulting remindAt to true', () => {
+    const perPrayer = { ...DEFAULT_PER_PRAYER, isha: { enabled: 'yes', remindBefore: 0 } };
+    const r = validatePrayer({ ...valid, perPrayer });
+    // 'yes' is not true, so enabled must be false — the main process never
+    // trusts the renderer's types.
+    expect(r.value.perPrayer.isha.enabled).toBe(false);
+    expect(r.value.perPrayer.isha.remindAt).toBe(true);
+  });
+
+  it('rejects a missing object outright', () => {
+    expect(validatePrayer(null).ok).toBe(false);
+    expect(validatePrayer('nope').ok).toBe(false);
+  });
+});
+
+describe('config migration v1 -> v2', () => {
+  it('gives a v1 config the new sections without touching what it had', () => {
+    const v1 = {
+      version: 1,
+      schedule: { mode: 'interval', everyMinutes: 45 },
+      quietHours: { enabled: true, from: '22:00', to: '06:00' },
+      verseOrder: 'sequential',
+      sequencePosition: 1234,
+      sound: { enabled: false, volume: 0.2 },
+      notification: { durationMs: 20000, position: 'bottom-right' },
+      startWithWindows: false,
+      autostartInitialised: true,
+      lastFiredAt: null
+    };
+    const migrated = migrate(v1);
+
+    expect(migrated.version).toBe(2);
+    // Nothing the user had configured is disturbed.
+    expect(migrated.schedule).toEqual(v1.schedule);
+    expect(migrated.quietHours).toEqual(v1.quietHours);
+    expect(migrated.verseOrder).toBe('sequential');
+    expect(migrated.sequencePosition).toBe(1234);
+    expect(migrated.sound).toEqual(v1.sound);
+    expect(migrated.startWithWindows).toBe(false);
+
+    // And the new sections arrive at their defaults.
+    expect(migrated.location).toBeNull();
+    expect(migrated.prayer).toEqual(DEFAULT_CONFIG.prayer);
+  });
+
+  it('drops a corrupt location rather than letting it reach the calculator', () => {
+    // Latitude 500 would make every prayer time garbage. Falling back to
+    // null degrades to "no prayer times", which is visible and fixable.
+    const migrated = migrate({ location: { name: 'X', latitude: 500, longitude: 0, timezone: 'UTC' } });
+    expect(migrated.location).toBeNull();
+  });
+
+  it('keeps a valid location through migration', () => {
+    const location = { name: 'Gaza', latitude: 31.5, longitude: 34.47, timezone: 'Asia/Gaza' };
+    expect(migrate({ location }).location).toEqual(location);
+  });
+
+  it('repairs a corrupt prayer section instead of failing the whole config', () => {
+    const migrated = migrate({ prayer: { method: 'Nonsense', offsets: { asr: 'x' } } });
+    expect(migrated.prayer).toEqual(DEFAULT_CONFIG.prayer);
+  });
+});

@@ -38,16 +38,28 @@
       transition: transform 200ms ease-out, opacity 200ms ease-out;
     }
     .card.show { transform: translateX(0); opacity: 1; }
-    .ayah { font-family: 'Amiri Quran', serif; font-size: 22px; line-height: 2; }
+    /* --verse-size is set from config by main.js on each show. The long
+       ayah step-downs below are MULTIPLES of it rather than fixed pixel
+       values, so a user who raises the base size still gets proportionally
+       smaller text for the outliers instead of the two settings fighting. */
+    .ayah { font-family: 'Amiri Quran', serif; font-size: var(--verse-size, 22px); line-height: 2; }
     /* Stepped down for long ayat so more text fits before the scrollbar
        kicks in (see main.js, which applies these classes before the height
        measurement runs). Thresholds picked from the dataset's actual length
        distribution: 300/600 chars sit at roughly the p97/p99.8 marks, so
        this only touches genuine outliers (~3.5% and ~0.2% of ayat
        respectively) — the vast majority (p95 = 273 chars) render unchanged. */
-    .ayah.long { font-size: 18px; }
-    .ayah.xlong { font-size: 16px; }
+    .ayah.long { font-size: calc(var(--verse-size, 22px) * 0.82); }
+    .ayah.xlong { font-size: calc(var(--verse-size, 22px) * 0.73); }
     .ref { margin-top: 12px; font-size: 13px; opacity: .7; }
+    .hidden { display: none; }
+    /* Prayer card. Deliberately quieter than the verse card: the Arabic
+       name leads, but at a size that reads as a label rather than as
+       scripture, so the two are never mistaken for one another. */
+    .prayer-ar { font-family: 'Amiri Quran', serif; font-size: 26px; line-height: 1.6; }
+    .prayer-en { font-size: 15px; margin-top: 2px; opacity: .85; }
+    .prayer-time { font-size: 30px; font-variant-numeric: tabular-nums; margin-top: 10px; letter-spacing: .5px; }
+    .prayer-loc { margin-top: 10px; font-size: 12px; opacity: .6; }
     .pin {
       position: absolute;
       top: 8px;
@@ -72,6 +84,16 @@
     <button class="pin" id="pin" type="button" aria-pressed="false" aria-label="Pin — keep this verse on screen" title="Pin">📌</button>
     <div class="ayah" id="ayah"></div>
     <div class="ref" id="ref"></div>
+    <!-- Prayer content lives in the same card. Both blocks are present in
+         the markup and one is hidden, rather than building nodes in JS, so
+         the height measurement in main.js sees a fully laid-out card
+         either way. -->
+    <div class="prayer hidden" id="prayer">
+      <div class="prayer-ar" id="prayer-ar"></div>
+      <div class="prayer-en" id="prayer-en"></div>
+      <div class="prayer-time" id="prayer-time"></div>
+      <div class="prayer-loc" id="prayer-loc"></div>
+    </div>
   </div>
   <audio id="chime" src="../../../resources/sounds/notify.wav" preload="auto"></audio>
   <script type="module" src="./main.js"></script>

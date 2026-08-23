@@ -2,7 +2,14 @@ import Store from 'electron-store';
 import path from 'node:path';
 import fs from 'node:fs';
 import electron from 'electron';
-import { validateSchedule, validateQuietHours, validateNotification } from './validate.js';
+import { validateSchedule, validateQuietHours, validateNotification, validateLocation, validatePrayer } from './validate.js';
+import {
+  DEFAULT_METHOD,
+  DEFAULT_SCHOOL,
+  DEFAULT_HIGH_LATITUDE_RULE,
+  DEFAULT_POLAR_RESOLUTION
+} from './prayer/methods.js';
+import { DEFAULT_PER_PRAYER } from './prayer/schedule.js';
 
 // Default (non-named) import: under a real Electron main process this is the
 // Electron API object; under plain Node (e.g. this file loaded by Vitest)
@@ -22,7 +29,7 @@ export const TOTAL_AYAHS = 6236;
  */
 
 export const DEFAULT_CONFIG = {
-  version: 1,
+  version: 2,
   schedule: { mode: 'interval', everyMinutes: 90 },
   // Off by default (2026-08-23 decision). A new user who installs a verse
   // reminder and gets silence between 23:00 and 07:00 has no way to tell
@@ -35,7 +42,11 @@ export const DEFAULT_CONFIG = {
   sequencePosition: 0,
   translation: { id: null, downloadedAt: null },
   sound: { enabled: true, volume: 0.5 },
-  notification: { durationMs: 15000, position: 'bottom-right' },
+  // verseFontSize is the BASE size for the Arabic verse text in the
+  // notification card, in pixels. The long-ayah step-downs in the card's
+  // CSS are expressed as multiples of it, so raising this scales the whole
+  // range rather than colliding with them.
+  notification: { durationMs: 15000, position: 'bottom-right', verseFontSize: 22 },
   // On by default for new installs (2026-08-21 decision, reverses the
   // original v1 design intent of asking on first run — see the spec's
   // "Decision reversal" note). This is only the schema default; making it
@@ -51,7 +62,31 @@ export const DEFAULT_CONFIG = {
   // finds it disagrees with config, and reconciles config right back to
   // false before the user ever sees it. See decideAutostartAction.
   autostartInitialised: false,
-  lastFiredAt: null
+  lastFiredAt: null,
+
+  // --- Schema v2: location and prayer times ---------------------------
+  //
+  // null until the user picks somewhere. Prayer, athan and fasting features
+  // stay disabled while it is null rather than guessing — a wrong location
+  // produces confidently wrong prayer times, which is worse than none.
+  // Verse reminders never depend on it.
+  //
+  // The COORDINATES are the source of truth; `name` is only a display
+  // label. Nothing re-resolves a name to a position at runtime.
+  /** @type {{name:string, latitude:number, longitude:number, timezone:string}|null} */
+  location: null,
+
+  prayer: {
+    method: DEFAULT_METHOD,
+    school: DEFAULT_SCHOOL,
+    highLatitudeRule: DEFAULT_HIGH_LATITUDE_RULE,
+    polarCircleResolution: DEFAULT_POLAR_RESOLUTION,
+    // User's own per-prayer minute adjustments, on top of whatever the
+    // chosen method (or preset) already applies. Empty means "no personal
+    // correction" — see prayer/methods.js paramsFor().
+    offsets: {},
+    perPrayer: structuredClone(DEFAULT_PER_PRAYER)
+  }
 };
 
 export function migrate(raw) {
@@ -63,7 +98,17 @@ export function migrate(raw) {
     quietHours: { ...DEFAULT_CONFIG.quietHours, ...(raw.quietHours ?? {}) },
     translation: { ...DEFAULT_CONFIG.translation, ...(raw.translation ?? {}) },
     sound: { ...DEFAULT_CONFIG.sound, ...(raw.sound ?? {}) },
-    notification: { ...DEFAULT_CONFIG.notification, ...(raw.notification ?? {}) }
+    notification: { ...DEFAULT_CONFIG.notification, ...(raw.notification ?? {}) },
+    // v1 -> v2. A config written before prayer times existed has neither
+    // key, so both fall back to defaults: location null (features stay
+    // disabled until the user chooses somewhere) and prayer at its
+    // defaults. Nothing a v1 user had configured is touched.
+    prayer: {
+      ...DEFAULT_CONFIG.prayer,
+      ...(raw.prayer ?? {}),
+      offsets: { ...(raw.prayer?.offsets ?? {}) },
+      perPrayer: { ...DEFAULT_PER_PRAYER, ...(raw.prayer?.perPrayer ?? {}) }
+    }
   };
   const pos = merged.sequencePosition;
   if (!Number.isInteger(pos) || pos < 0 || pos >= TOTAL_AYAHS) merged.sequencePosition = 0;
@@ -85,6 +130,22 @@ export function migrate(raw) {
   // as schedule/quietHours above.
   const notificationResult = validateNotification(merged.notification);
   merged.notification = notificationResult.ok ? notificationResult.value : structuredClone(DEFAULT_CONFIG.notification);
+
+  // Same disk-read guard as the sections above. A hand-edited location with
+  // a latitude of 500 would make every prayer calculation produce garbage,
+  // and a bad method id would throw on the first tick — both of which look
+  // to the user like "the app stopped working" with no explanation.
+  // Falling back to null/defaults degrades to "no prayer times" instead,
+  // which is visible and recoverable from Settings.
+  if (merged.location !== null && merged.location !== undefined) {
+    const locationResult = validateLocation(merged.location);
+    merged.location = locationResult.ok ? locationResult.value : null;
+  } else {
+    merged.location = null;
+  }
+
+  const prayerResult = validatePrayer(merged.prayer);
+  merged.prayer = prayerResult.ok ? prayerResult.value : structuredClone(DEFAULT_CONFIG.prayer);
 
   // A corrupt, non-null lastFiredAt (e.g. 'garbage') is truthy but parses to
   // an Invalid Date. shouldFire() would then compare NaN against `now` on
@@ -127,7 +188,9 @@ export function migrate(raw) {
     merged.autostartInitialised = false;
   }
 
-  merged.version = 1;
+  // Stamped rather than carried over from `raw`: migrate() has just brought
+  // the object up to the current shape, whatever version it arrived as.
+  merged.version = 2;
   return merged;
 }
 

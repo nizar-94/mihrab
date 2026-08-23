@@ -97,9 +97,17 @@ describe('migrate', () => {
     expect(migrate({ notification: null }).notification).toEqual(DEFAULT_CONFIG.notification);
   });
 
-  it('preserves a valid non-default notification', () => {
+  it('preserves a valid non-default notification, backfilling the verse size', () => {
+    // A v1 config has no verseFontSize; migration gives it the default
+    // rather than dropping the section or failing validation.
     const n = { durationMs: 30000, position: 'bottom-right' };
-    expect(migrate({ notification: n }).notification).toEqual(n);
+    expect(migrate({ notification: n }).notification)
+      .toEqual({ ...n, verseFontSize: 22 });
+  });
+
+  it('keeps a verse size the user already chose', () => {
+    const n = { durationMs: 15000, position: 'bottom-right', verseFontSize: 30 };
+    expect(migrate({ notification: n }).notification.verseFontSize).toBe(30);
   });
 
   it('defaults startWithWindows to true and autostartInitialised to false', () => {

@@ -1,5 +1,22 @@
-// Standalone by design: no imports. config.js imports this module, so any
-// import back into config.js would create a cycle.
+// Validators. Each returns {ok: true, value} or {ok: false, error}, so the
+// settings form and the disk-read path in config.js share one definition of
+// what is acceptable.
+//
+// Imports only ever point AWAY from config.js — config.js imports this
+// module, so importing it back would create a cycle. The prayer imports
+// below are safe for that reason: prayer/methods.js and prayer/schedule.js
+// depend on adhan and each other, never on config.
+import {
+  METHODS,
+  SCHOOLS,
+  HIGH_LATITUDE_RULES,
+  POLAR_RESOLUTIONS,
+  DEFAULT_METHOD,
+  DEFAULT_SCHOOL,
+  DEFAULT_HIGH_LATITUDE_RULE,
+  DEFAULT_POLAR_RESOLUTION
+} from './prayer/methods.js';
+import { NOTIFIABLE_KEYS, DEFAULT_PER_PRAYER } from './prayer/schedule.js';
 
 // Hour may be one or two digits: "1:31" and "01:31" are the same time, and
 // typing the leading zero is friction with no purpose. Everything is
@@ -81,6 +98,10 @@ export function validateSound(s) {
   return ok({ enabled: s.enabled, volume: s.volume });
 }
 
+export const VERSE_FONT_SIZE_MIN = 14;
+export const VERSE_FONT_SIZE_MAX = 40;
+export const VERSE_FONT_SIZE_DEFAULT = 22;
+
 export function validateNotification(n) {
   if (!n || typeof n !== 'object') return bad('Notification settings are missing.');
   const d = n.durationMs;
@@ -88,5 +109,95 @@ export function validateNotification(n) {
     return bad('Duration must be a whole number of milliseconds between 1000 and 300000.');
   }
   if (n.position !== 'bottom-right') return bad(`Unknown notification position: ${n?.position}`);
-  return ok({ durationMs: d, position: n.position });
+
+  // Bounds are about legibility, not taste: below ~14px the tashkeel on
+  // Amiri Quran stop being distinguishable, and above ~40px even a short
+  // ayah overflows the card's 60%-of-screen height cap.
+  const size = n.verseFontSize ?? VERSE_FONT_SIZE_DEFAULT;
+  if (!Number.isInteger(size) || size < VERSE_FONT_SIZE_MIN || size > VERSE_FONT_SIZE_MAX) {
+    return bad(`Verse text size must be a whole number between ${VERSE_FONT_SIZE_MIN} and ${VERSE_FONT_SIZE_MAX}.`);
+  }
+  return ok({ durationMs: d, position: n.position, verseFontSize: size });
+}
+
+// --- Schema v2: location and prayer settings --------------------------
+//
+// These are imported from prayer/methods.js and prayer/schedule.js rather
+// than duplicated, so adding a calculation method in one place cannot leave
+// the validator rejecting it in another.
+
+// Deliberately permissive about the zone STRING but strict about its
+// validity: Intl throws a RangeError on an unknown zone, and that throw
+// would otherwise surface on the first scheduler tick rather than here.
+function isValidTimeZone(tz) {
+  if (typeof tz !== 'string' || tz === '') return false;
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function validateLocation(l) {
+  if (l === null) return ok(null);
+  if (!l || typeof l !== 'object') return bad('Location is missing.');
+
+  const lat = Number(l.latitude);
+  const lon = Number(l.longitude);
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+    return bad('Latitude must be between -90 and 90.');
+  }
+  if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+    return bad('Longitude must be between -180 and 180.');
+  }
+  if (!isValidTimeZone(l.timezone)) {
+    return bad('Location needs a valid IANA time zone, e.g. Asia/Jerusalem.');
+  }
+  const name = typeof l.name === 'string' ? l.name.trim() : '';
+  if (!name) return bad('Location needs a name.');
+
+  return ok({ name, latitude: lat, longitude: lon, timezone: l.timezone });
+}
+
+export function validatePrayer(p) {
+  if (!p || typeof p !== 'object') return bad('Prayer settings are missing.');
+
+  const method = METHODS.some((m) => m.id === p.method) ? p.method : DEFAULT_METHOD;
+  const school = SCHOOLS.some((s) => s.id === p.school) ? p.school : DEFAULT_SCHOOL;
+  const highLatitudeRule = HIGH_LATITUDE_RULES.some((r) => r.id === p.highLatitudeRule)
+    ? p.highLatitudeRule
+    : DEFAULT_HIGH_LATITUDE_RULE;
+  const polarCircleResolution = POLAR_RESOLUTIONS.some((r) => r.id === p.polarCircleResolution)
+    ? p.polarCircleResolution
+    : DEFAULT_POLAR_RESOLUTION;
+
+  // Unknown ids fall back to defaults rather than failing the whole object.
+  // A config naming a method removed in a later version should cost the user
+  // their method choice, not every prayer setting they have.
+
+  const offsets = {};
+  for (const key of NOTIFIABLE_KEYS) {
+    const value = p.offsets?.[key];
+    if (value === undefined || value === null) continue;
+    if (!Number.isInteger(value)) return bad(`Offset for ${key} must be a whole number of minutes.`);
+    if (value < -59 || value > 59) return bad(`Offset for ${key} must be between -59 and 59 minutes.`);
+    offsets[key] = value;
+  }
+
+  const perPrayer = {};
+  for (const key of NOTIFIABLE_KEYS) {
+    const raw = p.perPrayer?.[key] ?? DEFAULT_PER_PRAYER[key];
+    const before = raw?.remindBefore ?? 0;
+    if (!Number.isInteger(before) || before < 0 || before > 120) {
+      return bad(`Reminder lead time for ${key} must be between 0 and 120 minutes.`);
+    }
+    perPrayer[key] = {
+      enabled: raw?.enabled === true,
+      remindAt: raw?.remindAt !== false,
+      remindBefore: before
+    };
+  }
+
+  return ok({ method, school, highLatitudeRule, polarCircleResolution, offsets, perPrayer });
 }

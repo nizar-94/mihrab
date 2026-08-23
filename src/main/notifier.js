@@ -77,9 +77,21 @@ export function registerNotifierIpc() {
   });
 }
 
-export function showVerse(ayah, cfg, onShown) {
-  // FIX 3: callers need to know whether this call actually displayed a
-  // verse or was skipped because a card is already on screen — a caller
+/**
+ * Open the notification card and hand the renderer its content.
+ *
+ * Extracted so verse and prayer cards share one implementation of the parts
+ * that were hard to get right — the concurrency guard, the ready-to-show
+ * timeout that stops `current` wedging forever, and the loadFile rejection
+ * path. A second copy of that logic for prayers would be a second place for
+ * those bugs to come back.
+ *
+ * @param {(win: Electron.BrowserWindow) => void} send - called once the
+ *   window is ready, to push its content over IPC
+ */
+function showCard(send, cfg, onShown) {
+  // FIX 3: callers need to know whether this call actually displayed
+  // something or was skipped because a card is already on screen — a caller
   // that records reading position before knowing this would silently skip
   // verses in sequential mode.
   if (current) return false;
@@ -101,7 +113,7 @@ export function showVerse(ayah, cfg, onShown) {
   current.once('ready-to-show', () => {
     clearTimeout(readyTimeout);
     readyTimeout = null;
-    current.webContents.send('verse:show', { ayah, sound: cfg.sound });
+    send(current);
     // Sizing, positioning, showInactive(), and arming the dismiss timer all
     // happen once the renderer reports its measured height (verse:size, see
     // registerNotifierIpc above).
@@ -120,4 +132,26 @@ export function showVerse(ayah, cfg, onShown) {
     });
 
   return true;
+}
+
+export function showVerse(ayah, cfg, onShown) {
+  return showCard(
+    (win) => win.webContents.send('verse:show', { ayah, sound: cfg.sound, notification: cfg.notification }),
+    cfg,
+    onShown
+  );
+}
+
+/**
+ * Prayer card. Same window, same lifecycle, different content.
+ *
+ * @param {{prayer:string, en:string, ar:string, kind:'at'|'before',
+ *          time:string, location:string}} prayer
+ */
+export function showPrayer(prayer, cfg, onShown) {
+  return showCard(
+    (win) => win.webContents.send('prayer:show', { prayer, sound: cfg.sound }),
+    cfg,
+    onShown
+  );
 }

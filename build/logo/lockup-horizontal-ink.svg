@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100" width="900" height="300"><g transform="translate(0,4) scale(0.92)">
+  <path fill="#16161A" d="M48.8 27 h2.4 v16 h-2.4 Z"></path>
+  <circle cx="50" cy="27" r="4" fill="#16161A"></circle>
+  <path fill="#16161A" d="M20 78 C20 59, 34 50, 50 41 C66 50, 80 59, 80 78 Z"></path>
+  
+  
+  <path fill="#16161A" d="M16 78 H84 V88 H16 Z"></path></g><g transform="translate(100,28)"><text x="0" y="34" font-family="Sora, Segoe UI, sans-serif" font-size="34" font-weight="600" letter-spacing="-1.2" fill="#16161A">Muslim<tspan font-weight="200" fill="#57565B"> App</tspan></text></g></svg>

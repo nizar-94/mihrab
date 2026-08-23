@@ -99,7 +99,7 @@ describe('validateSound', () => {
 describe('validateNotification', () => {
   it('accepts a sane duration and the only supported position', () => {
     expect(validateNotification({ durationMs: 15000, position: 'bottom-right' }))
-      .toEqual({ ok: true, value: { durationMs: 15000, position: 'bottom-right' } });
+      .toEqual({ ok: true, value: { durationMs: 15000, position: 'bottom-right', verseFontSize: 22 } });
   });
 
   it('rejects zero, negative, non-integer, non-numeric, and NaN durations', () => {
@@ -187,5 +187,32 @@ describe('validateQuietHours — single-digit hours', () => {
 
   it('treats 7:00 and 07:00 as the same bound when rejecting an empty window', () => {
     expect(validateQuietHours({ enabled: true, from: '7:00', to: '07:00' }).ok).toBe(false);
+  });
+});
+
+describe('validateNotification — verse text size', () => {
+  const base = { durationMs: 15000, position: 'bottom-right' };
+
+  it('defaults to 22 when absent, so a v1 config needs no migration of its own', () => {
+    expect(validateNotification(base).value.verseFontSize).toBe(22);
+  });
+
+  it('accepts a value inside the legible range', () => {
+    expect(validateNotification({ ...base, verseFontSize: 30 }).value.verseFontSize).toBe(30);
+    expect(validateNotification({ ...base, verseFontSize: 14 }).ok).toBe(true);
+    expect(validateNotification({ ...base, verseFontSize: 40 }).ok).toBe(true);
+  });
+
+  it('rejects sizes outside it', () => {
+    // Below ~14px the tashkeel stop being distinguishable; above ~40px even
+    // a short ayah overflows the card's height cap.
+    expect(validateNotification({ ...base, verseFontSize: 13 }).ok).toBe(false);
+    expect(validateNotification({ ...base, verseFontSize: 41 }).ok).toBe(false);
+  });
+
+  it('rejects non-integers, which would produce a fractional-pixel font', () => {
+    expect(validateNotification({ ...base, verseFontSize: 22.5 }).ok).toBe(false);
+    expect(validateNotification({ ...base, verseFontSize: 'big' }).ok).toBe(false);
+    expect(validateNotification({ ...base, verseFontSize: NaN }).ok).toBe(false);
   });
 });
