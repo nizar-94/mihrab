@@ -1,145 +1,206 @@
 # Mihrab
 
-A Windows system-tray app that shows a random or sequential Quran verse as a
-custom desktop notification, on a schedule you choose. Fully offline — no
-servers, no accounts, no telemetry.
+A Windows tray app for Qur'an verses, prayer times, adhkar and fasting
+reminders. Everything is calculated on your own machine — no accounts, no
+servers, no telemetry.
 
-## Download
+**[⬇ Download the latest release](https://github.com/nizar-94/mihrab/releases/latest)**
 
-Grab the latest `Mihrab-Setup-<version>.exe` from the
-[Releases page](https://github.com/nizar-94/mihrab/releases) and run it.
+<p align="center">
+  <img src="docs/screenshots/verse-card.png" alt="A Qur'an verse notification with translation and khitmah progress" width="420">
+</p>
 
-Windows 10/11 only, 64-bit. It installs per-user, so there is no admin
-prompt, and it adds a Start Menu entry rather than a desktop icon — the app
-lives in the notification area (the `^` chevron next to the clock), not the
-taskbar.
+---
 
-**You will see a SmartScreen warning** — "Windows protected your PC". Click
-*More info* → *Run anyway*. This is expected: the installer is not yet
-code-signed, so Windows has no publisher identity to check it against. See
-[`docs/code-signing.md`](./docs/code-signing.md) for what is being done
-about it. Nothing about the warning is specific to this app; any unsigned
-installer gets it.
+## What it does
 
-Everything works offline. The only times the app uses the network are the
-update check and, if you ask for one, downloading a translation.
+### Qur'an verses
 
-The app updates itself. It checks for a new release shortly after launch and
-every six hours after that, downloads in the background, and installs the
-next time you quit — it will never restart itself while you are using it.
-You can also check on demand from the tray menu.
+- **Three scheduling modes** — every N minutes, at given minutes of each
+  hour, or at specific daily times.
+- **Random or sequential** order, remembering your place across restarts.
+- **Khitmah progress** — in sequential order, a progress bar tracks your way
+  through a complete reading, on the card and in Settings.
+- **Twenty translations across sixteen languages**, shown beneath the
+  Arabic. Downloaded only when you pick one; none is bundled.
+- **Adjustable text size** for the Arabic on the card.
+- Amiri Quran typeface, right-to-left, tashkeel intact, and the card sizes
+  itself to the verse.
 
-To uninstall: Settings → Apps → Installed apps → Mihrab, or the
-`Uninstall Mihrab` entry in the install folder.
+### Prayer times
 
-## Features
+- **Works anywhere** — choose from 34,000 bundled cities or enter
+  coordinates directly. Nothing is sent anywhere.
+- **Twelve calculation methods** — Muslim World League, Umm Al-Qura, ISNA,
+  Egyptian, Karachi, Diyanet and more — plus Standard/Hanafi for Asr, so the
+  times match whichever convention your local mosque follows.
+- **Per prayer**: on or off, a reminder at the time, an early warning some
+  minutes before, or both.
+- **Fine adjustment** — shift any prayer by up to 59 minutes.
+- **Correct at high latitudes**, where twilight never ends in summer or the
+  sun does not set at all.
 
-- **Three scheduling modes** — pick whichever fits how you want to be
-  reminded:
-  - Every N minutes
-  - At given minutes of each hour (e.g. `:00` and `:30`)
-  - At specific daily times (e.g. `09:00`, `13:30`, `21:00`)
-- **Quiet hours** — suppress notifications during a configurable overnight
-  window. Off by default; the 23:00–07:00 bounds are pre-filled for when you
-  turn it on.
-- **Random or sequential verse order** — either a random ayah each time, or
-  work through the Quran in order starting from where you left off.
-- **Notification sound** — an optional chime, with adjustable volume.
-- **Pause** — silence reminders from the tray without changing your
-  schedule, and resume whenever.
-- **Starts with Windows** — on by default for new installs, and toggleable
-  from Settings or from Windows' own Startup apps list.
-- **Automatic updates** — checks GitHub Releases in the background and
-  installs on your next quit.
-- **Settings window** — configure everything from the tray icon; no config
-  file editing required for normal use.
+### Adhkar
+
+- **34 morning and evening adhkar** in Arabic, with English translation,
+  transliteration and repeat counts.
+- **Anchored to prayer times, not the clock** — morning after Fajr or
+  sunrise, evening after Asr or Maghrib, with an offset you choose. The
+  reminder stays in its proper window as day length changes through the year.
+- **Editable** — switch any off, or add your own.
+
+### Fasting
+
+- **White days** (13th, 14th, 15th of each Hijri month), **Mondays and
+  Thursdays**, **Tasu'a and Ashura**, the **Day of Arafah**, and the **six
+  days of Shawwal** — each independently toggleable.
+- **Reminders arrive the day before**, at a time you set, so there is still
+  time to prepare and to make suhoor.
+
+### The app itself
+
+- Lives in the tray; runs with no window open.
+- Settings in **Arabic or English**, right-to-left when Arabic.
+- Quiet hours, pause and resume, and a sample notification for each category.
+- Starts with Windows, and updates itself from GitHub Releases.
+
+---
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Prayer times settings](docs/screenshots/settings-athan.png) | ![Adhkar settings](docs/screenshots/settings-azkar.png) |
+| Prayer times, per-prayer control and today's times | Adhkar, anchored to prayer times and editable |
+| ![Prayer reminder](docs/screenshots/prayer-card.png) | ![Fasting reminder](docs/screenshots/fasting-card.png) |
+| A prayer reminder | A fasting reminder, the day before |
+
+---
+
+## Install
+
+Download `Mihrab-Setup-<version>.exe` from the
+[latest release](https://github.com/nizar-94/mihrab/releases/latest) and run it.
+
+Windows 10/11, 64-bit. It installs per-user, so there is no admin prompt,
+and it adds a Start Menu entry rather than a desktop icon — the app lives in
+the notification area, behind the `^` chevron next to the clock.
+
+**You will see a SmartScreen warning** — *"Windows protected your PC"*.
+Click **More info** → **Run anyway**. This is expected: the installer is not
+code-signed yet, so Windows has no publisher identity to check it against.
+Every unsigned installer gets this. See
+[`docs/code-signing.md`](./docs/code-signing.md) for what is being done about
+it — and the source is right here if you would rather read the code than
+trust the binary.
+
+On first launch it asks for your location once. That is the only thing the
+app cannot work out for itself.
+
+To uninstall: Settings → Apps → Installed apps → Mihrab.
+
+---
+
+## Privacy
+
+Everything is computed locally. Prayer times come from your coordinates on
+your own machine; the Qur'an text and the adhkar ship with the app.
+
+The app makes exactly **two** kinds of network request, both visible in the
+source:
+
+1. **Update checks** against this repository's Releases feed.
+2. **A translation download**, once, if you choose one.
+
+No accounts, no analytics, no telemetry. Nothing about you leaves your
+machine.
+
+---
 
 ## Development
 
 ```bash
 npm install
-npm run dev    # runs the app in development mode
-npm test       # runs the test suite
-npm run dist   # builds the Windows installer into dist/
+npm run dev    # run the app in development mode
+npm test       # run the test suite
+npm run dist   # build the Windows installer into dist/
 ```
 
-Auto-update checks are inert in a dev run — they need the `app-update.yml`
-that only a packaged build has, so `npm run dev` logs a skip instead.
+Auto-update checks and autostart registration are inert in a dev run — both
+are packaged-only, so running from source cannot alter your installed app's
+settings.
 
 Releases are cut by pushing a `v*` tag, which triggers
 [`.github/workflows/release.yml`](.github/workflows/release.yml): tests,
-build, then publish. Note that electron-builder uploads to a **draft**
-release, so the last step is always to publish it by hand — until you do,
-the release is invisible both to users and to the updater.
+build, publish.
 
 ### Gotcha: Electron binary not downloaded
 
-On some setups, `npm install` does not automatically download the Electron
-binary. If `npm run dev` fails to launch, run:
+On some setups `npm install` does not fetch the Electron binary. If
+`npm run dev` fails to launch immediately, run:
 
 ```bash
 node node_modules/electron/install.js
 ```
 
-This was hit during development on a fresh clone and will likely bite other
-fresh clones too — try it first if `npm run dev` errors out immediately.
+---
 
 ## Attribution
 
-This project bundles third-party data and assets. Full details, sources,
-and license terms are in [`NOTICE`](./NOTICE). In summary:
+Full details and licence terms are in [`NOTICE`](./NOTICE).
 
-- **Quran text** — from the [Tanzil Project](https://tanzil.net), licensed
-  under Creative Commons Attribution 3.0 (CC-BY 3.0).
-- **Amiri Quran font** — from the
-  [Amiri type project](https://github.com/aliftype/amiri), licensed under
-  the SIL Open Font License 1.1 (OFL-1.1).
-- **Notification chime** — an original two-tone sound generated
-  programmatically by [`tools/make-chime.mjs`](./tools/make-chime.mjs); not
-  a third-party asset.
+- **Qur'an text** — [Tanzil Project](https://tanzil.net) (Uthmani, v1.1),
+  CC-BY 3.0.
+- **Amiri Quran font** — the [Amiri project](https://github.com/aliftype/amiri),
+  SIL OFL 1.1.
+- **Prayer times** — [adhan](https://github.com/batoulapps/adhan-js), MIT.
+- **City coordinates** — [GeoNames](https://www.geonames.org), CC-BY 4.0.
+- **Adhkar** — [Morning and Evening Adhkar Database](https://github.com/Seen-Arabic/Morning-And-Evening-Adhkar-DB),
+  MIT. Each entry keeps its own hadith citation.
+- **Translations** — [Tanzil](https://tanzil.net/trans/), **not bundled**:
+  downloaded to your own machine when you choose one, because Tanzil provide
+  them for non-commercial use only.
 
-## Not yet implemented
+---
 
-The following are deliberately out of scope for now:
+## Not yet
 
-- Translations (only the original Arabic text is shown)
-- Prayer times and athan
-- Azkar (morning and evening) and fasting reminders
-- macOS and Linux builds — Windows only for now
-- Code signing (see the SmartScreen note under [Download](#download))
+- Athan audio — prayer reminders use the standard notification chime.
+- macOS and Linux builds.
+- Code signing.
 
-The roadmap for these is in
-[`docs/future-phases.md`](./docs/future-phases.md).
+Roadmap: [`docs/future-phases.md`](./docs/future-phases.md).
 
-## Licence
-
-Licensed under the **GNU General Public License v3.0 or later** — see
-[`LICENSE`](./LICENSE).
-
-In short: you are free to use, study, share, and modify this software. If you
-distribute a modified version, you must release your source under the GPL too,
-so it stays free for everyone downstream. This is deliberate — the intent is
-that nobody can take this work closed-source and build a proprietary product
-on top of it.
-
-Note that the bundled Quran text and font carry their own separate licences
-(CC-BY 3.0 and OFL-1.1 respectively) — see [`NOTICE`](./NOTICE).
+---
 
 ## Contributing
 
-Contributions are welcome. Please note that this project requires contributors
-to sign a **Contributor License Agreement (CLA)** before their code can be
-merged. This keeps the copyright consolidated so the project's licensing can be
-adjusted in future if it ever needs to be — without having to track down every
-past contributor for permission.
+Issues and pull requests are welcome — bugs, prayer times that look wrong
+for your area, a calculation method that is missing, anything.
 
-If you are opening your first pull request, say so and the CLA process will be
-sorted out with you.
+Contributors sign a **Contributor License Agreement** before code can be
+merged; if you are opening your first pull request, say so and it will be
+sorted out with you. See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+---
+
+## Licence
+
+**GPL-3.0-or-later** — see [`LICENSE`](./LICENSE).
+
+You are free to use, study, share and modify this software. If you
+distribute a modified version, you must release your source under the GPL
+too, so it stays free for everyone downstream.
+
+The bundled Qur'an text, font, city data and adhkar carry their own
+licences — see [`NOTICE`](./NOTICE).
+
+---
 
 ## Author
 
-Built and maintained by **Nizar Hawawreh** — [@nizar-94](https://github.com/nizar-94).
+Built by **Nizar Hawawreh** —
+[GitHub](https://github.com/nizar-94) ·
+[LinkedIn](https://www.linkedin.com/in/nizar-hawawreh/)
 
-Copyright © Nizar Hawawreh. Licensed under GPL-3.0-or-later; the bundled
-Quran text, font and city data carry their own licences, listed in
-[`NOTICE`](./NOTICE).
+Copyright © Nizar Hawawreh.

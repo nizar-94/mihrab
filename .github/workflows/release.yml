@@ -67,6 +67,32 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Create the release BEFORE electron-builder runs.
+      #
+      # electron-builder uploads its artifacts (the installer, latest.yml
+      # and the .blockmap) in parallel, and each upload independently does
+      # "find the release for this tag, or create it". When none exists yet,
+      # two of those checks can race and BOTH create one — producing two
+      # releases with the same tag and the assets split between them, which
+      # is exactly what v1.3.0 did on its first publish: one release held
+      # only the .blockmap while the installer landed on the other.
+      #
+      # Creating it up front means every upload finds an existing release
+      # and none of them tries to create one. `|| true` keeps a re-run from
+      # failing when the release is already there.
+      #
+      # Runs under bash rather than the Windows runner's default pwsh:
+      # `|| true` needs a `true` command, which does not exist on Windows.
+      - name: Create the GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes "Release $GITHUB_REF_NAME" \
+          || echo "release already exists — continuing"
+
       # --publish always: unconditionally publish this build to the GitHub
       # Release matching the pushed tag (electron-builder otherwise only
       # publishes on a genuine CI tag-build heuristic it can get wrong for
