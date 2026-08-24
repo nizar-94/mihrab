@@ -2,7 +2,12 @@
 
 Drafted answers for the SignPath Foundation free OSS code-signing
 application, matched field-by-field against the **live** form as read on
-2026-08-23.
+2026-08-23 and re-checked on 2026-08-24.
+
+> **Re-check note (2026-08-24).** The form frame now refuses to load
+> outside its iframe, so the field list could not be re-read directly. The
+> embedded form ID is unchanged (`bf62807d-bb72-4e45-9bde-1f3a53ba2472`),
+> which is the same form the field list below was captured from.
 
 **You submit this, not an agent.** The form is a HubSpot embed behind
 reCAPTCHA Enterprise, it creates a SignPath user account, and it carries
@@ -22,34 +27,36 @@ fatal, but going in with them unaddressed invites a rejection or a deferral,
 and SignPath's review is a human judgement call rather than a mechanical
 pass/fail.
 
-### 1. `Reputation*` — currently nothing to put here
+### 1. `Reputation*` — thin, but no longer empty
 
 The form asks for "links or information showing that your project is widely
 used or trusted. Examples include media coverage, blog posts, download
 statistics, GitHub insights, or community discussions."
 
-As of 2026-08-23 the project has:
+As of **2026-08-24**:
 
 | Signal | Value |
 |--------|-------|
-| Repo created | 2026-08-20 (3 days old) |
-| Stars | 0 |
-| Forks | 0 |
-| Watchers / subscribers | 0 |
-| Published releases | 0 (v1.0.0 exists only as an unpublished draft) |
-| Download statistics | none — nothing has ever been downloadable |
+| Published releases | 3 (v1.3.1, v1.4.0, v1.4.1) |
+| Installer downloads | 9 |
+| Stars / forks | 0 / 0 |
+| Announcement | posted to LinkedIn on 2026-08-24 |
 | Media / blog coverage | none |
 
-There is no honest way to fill this field in strongly right now. The draft
-answer below states the position plainly rather than inflating it, which is
-the right call — but understand that it is the application's weakest point.
+This is the application's weakest field and it would be dishonest to
+present it otherwise. What has changed since the first draft is that the
+answer is no longer "nothing at all": there are published releases a
+reviewer can open, real download numbers, and a public announcement.
 
-**Recommendation:** publish v1.0.0, let the release page exist and
-accumulate some real download count and a few stars, then submit. The
-eligibility bar "must already be released in the form that should be signed"
-points the same direction: SignPath wants a release page a reviewer can
-open, and a reviewer who opens a page showing real downloads is being asked
-a much easier question.
+Note that **download counts now understate usage**: the app auto-updates,
+so anyone already on 1.3.1 receives 1.4.1 through the updater rather than
+the releases page. The 9 figure is first-time installs only.
+
+**Timing is a judgement call.** Submitting now is defensible — the hard
+eligibility bar ("already released in the form to be signed") is met.
+Waiting a week or two after the announcement, and re-checking the numbers
+before submitting, gives the reviewer a stronger picture at no cost beyond
+the delay. The rest of this document is ready either way.
 
 ### 2. `Project Name*` — RESOLVED (2026-08-23)
 
@@ -126,20 +133,31 @@ An offline Windows tray app that shows Quran verses as scheduled desktop reminde
 
 ### Description\*
 ```
-Mihrab is a Windows system-tray utility that displays a verse of the
-Quran as a desktop notification on a schedule the user configures. It runs
-entirely offline: the Quran text is bundled with the application, there are
-no accounts, no servers, and no telemetry of any kind. The only network
-request the app ever makes is to check GitHub Releases for a newer version.
+Mihrab is a Windows system-tray application that shows Quran verses, prayer
+times, morning and evening adhkar, and reminders for the recommended fasts,
+as desktop notifications on a schedule the user configures.
 
-The project is licensed GPL-3.0-or-later. It bundles two third-party assets,
-both under open licences and both documented in the repository's NOTICE
-file: the Quran text from the Tanzil Project (CC-BY 3.0) and the Amiri Quran
-font (SIL OFL 1.1). No proprietary or closed-source component is included in
-the artifact to be signed.
+It runs offline. Prayer times are calculated on the user's own machine from
+their coordinates using the adhan library; the Quran text, the adhkar and a
+database of city coordinates are bundled with the application. There are no
+accounts, no servers and no telemetry. The application makes exactly two
+kinds of network request: a version check against its own GitHub Releases
+feed, and — only if the user chooses a Quran translation — a one-off
+download of that translation.
+
+The project is licensed GPL-3.0-or-later. It bundles third-party data, all
+of it under open licences and all documented in the repository's NOTICE
+file: Quran text from the Tanzil Project (CC-BY 3.0), the Amiri Quran font
+(SIL OFL 1.1), city coordinates from GeoNames (CC-BY 4.0), the adhan prayer
+time library (MIT), and a morning/evening adhkar dataset (MIT). Quran
+translations are deliberately NOT bundled — Tanzil provide them for
+non-commercial use only, which is not an open-source licence, so they are
+downloaded by the user to their own machine instead and never redistributed
+by this project.
 
 The artifact requiring signature is a single NSIS installer executable
-produced by electron-builder and published to GitHub Releases.
+produced by electron-builder and published to GitHub Releases by a GitHub
+Actions workflow.
 ```
 
 The bundled-asset disclosure is deliberate — eligibility requires no
@@ -148,19 +166,28 @@ them up front is better than having a reviewer discover them.
 
 ### Reputation\*
 ```
-This is a new project, first published in August 2026, and it does not yet
-have download statistics, media coverage, or a user community to point to.
-I would rather state that plainly than overstate it.
+This is a young project — first published in August 2026 — so I would
+rather give you an accurate picture than an inflated one.
 
-What can be verified today: the repository is public with its full history,
-the build is reproducible from a documented GitHub Actions workflow that
-gates publication on a passing test suite, and the project ships with test
-coverage, a contributor licensing policy, and full third-party attribution.
+Current signals:
+- Three published releases with installers, the latest being v1.4.1
+- Installer downloads to date: 9. This understates usage, because the
+  application auto-updates: existing users receive new versions through
+  the updater rather than the releases page.
+- Announced publicly on LinkedIn in August 2026
+- No media coverage or third-party write-ups yet
+
+What can be verified independently: the repository is public with its full
+history, every release is built from a documented GitHub Actions workflow
+that gates publication on a passing test suite of 348 tests, and the
+project ships with contributor licensing, third-party attribution, and
+manual verification procedures for the features that cannot be
+automatically tested.
 
 Repository: https://github.com/nizar-94/mihrab
 ```
 
-Update this before submitting if there are real download numbers by then.
+Refresh the download figure immediately before submitting.
 
 ### Maintainer Type
 ```
@@ -202,16 +229,24 @@ Three appear, one of them optional:
 
 ## Pre-submission checklist
 
-- [ ] Publish the v1.0.0 draft release (also unblocks the auto-update test)
-- [ ] Confirm MFA is enabled on the GitHub account that will own the
-      SignPath GitHub App installation — required, and only you can verify it
-- [ ] Decide the naming question (caveat 2)
-- [ ] Add the code-signing policy section below to `README.md`
-- [ ] Refresh the `Reputation` answer with whatever real numbers exist
-- [x] Installer metadata verified — see below
-- [x] Reproducible CI build exists (`.github/workflows/release.yml`)
-- [x] `LICENSE` present at repo root, GPL-3.0-or-later
-- [x] Functionality documented in `README.md`
+- [x] **Published release exists** — three of them, with installers.
+      Satisfies the hard eligibility bar "must already be released in the
+      form that should be signed".
+- [x] **Reproducible CI build** — `.github/workflows/release.yml` builds
+      from a clean checkout on a pushed `v*` tag, gated on the test suite.
+      This is the Trusted Build System SignPath would sign from.
+- [x] **A searchable project name** — renamed to Mihrab, see caveat 2.
+- [x] **Code-signing policy published** on the download page (README).
+- [x] **LICENSE at the repo root**, GPL-3.0-or-later.
+- [x] **Functionality documented** in README.
+- [x] **Installer metadata verified** — see below.
+- [ ] **Confirm GitHub MFA is enabled** on the account that will own the
+      SignPath GitHub App installation. Required by SignPath's security
+      baseline, and only you can verify it.
+- [ ] **Refresh the `Reputation` figure** with the download count on the
+      day you submit.
+- [ ] **Submit the form** — reCAPTCHA and account creation make this a
+      human-only step.
 
 ### Installer metadata — verified 2026-08-23
 
@@ -245,9 +280,16 @@ Approver: Nizar Hawawreh (nizar-94) — sole approver of signing requests
 
 ---
 
-## Code-signing policy — ready to paste into `README.md`
+## Code-signing policy — PUBLISHED (2026-08-24)
 
-Add on submission, per caveat 3. Adjust the roles line if the team changes.
+Live in `README.md` under "Code signing policy", satisfying caveat 3
+before submission.
+
+It is worded as an application **in progress**, not as an existing
+relationship — claiming SignPath already signs this project while the
+application is pending would be untrue, and a reviewer reading the download
+page is precisely the person who would notice. Rewrite it to the present
+tense on approval:
 
 ```markdown
 ## Code signing policy

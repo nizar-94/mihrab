@@ -146,6 +146,26 @@ service involved.
 
 ---
 
+## Code signing policy
+
+The Windows installer is **not yet code-signed**, which is why Windows
+SmartScreen warns about it. An application has been made to the
+[SignPath Foundation](https://signpath.org), which provides free code
+signing certificates to open-source projects through
+[SignPath.io](https://signpath.io). This section will be updated when that
+application is resolved either way.
+
+- **Roles** — author, reviewer and approver: Nizar Hawawreh
+  ([@nizar-94](https://github.com/nizar-94)). All external contributions
+  arrive as pull requests and are reviewed before merge, gated by a CLA
+  check.
+- **Privacy policy** — Mihrab does not transfer any information about its
+  users to any third party. It runs offline; see [Privacy](#privacy) above
+  for the only two network requests it makes and why.
+- **Uninstall** — Settings → Apps → Installed apps → Mihrab.
+
+---
+
 ## Development
 
 ```bash
