@@ -209,9 +209,13 @@ const AR = {
   // --- accessible names and placeholders ----------------------------
   'Settings sections': 'أقسام الإعدادات',
   'Schedule mode': 'نمط التذكير',
-  'e.g. Jerusalem, Cairo, London': 'مثال: القدس، القاهرة، لندن',
-  'e.g. 9:00, 20:30': 'مثال: ٩:٠٠، ٢٠:٣٠',
-  'e.g. 0, 30': 'مثال: ٠، ٣٠',
+  // DELIBERATELY NOT TRANSLATED — see the note below the dictionary.
+  //   'e.g. Jerusalem, Cairo, London'
+  //   'e.g. 9:00, 20:30'
+  //   'e.g. 0, 30'
+  // A hint explaining why the city names are Latin is translated instead.
+  'City names are in English — type “Jerusalem”, not “القدس”.':
+    'أسماء المدن بالإنجليزية — اكتب «Jerusalem» لا «القدس».',
   'Home': 'المنزل',
   'Optional': 'اختياري',
   'Remind me about this prayer at all': 'هل أذكّرك بهذه الصلاة أصلًا',
@@ -236,6 +240,24 @@ const AR = {
     'النص العربي بخط أميري قرآن، © مؤلفو مشروع أميري، بموجب رخصة الخطوط المفتوحة SIL 1.1.'
 };
 
+// THREE PLACEHOLDERS ARE DELIBERATELY ABSENT FROM THE TABLE ABOVE.
+//
+// They are examples of what to TYPE, and the app only accepts one script
+// for each:
+//
+//   'e.g. Jerusalem, Cairo, London' — the bundled city database is
+//     GeoNames, whose names are Latin-script. An Arabic example invited
+//     the user to type "القدس", which matches nothing at all, and the
+//     search silently returned an empty list with no explanation.
+//
+//   'e.g. 9:00, 20:30' and 'e.g. 0, 30' — normaliseTime() and the minute
+//     parser accept ASCII digits only, so an example written in
+//     Arabic-Indic numerals (٩:٠٠) leads straight to a validation error
+//     for anyone who follows it.
+//
+// Translating a placeholder is only correct when the field accepts the
+// translated form. These do not, so they stay English and a translated
+// HINT explains why.
 const DICTIONARIES = { ar: AR };
 
 const squash = (text) => text.replace(/\s+/g, ' ').trim();

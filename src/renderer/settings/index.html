@@ -595,11 +595,11 @@
       </div>
       <div id="pane-minuteOfHour" class="pane hidden">
         <label for="minutes">At minute(s)</label>
-        <input type="text" id="minutes" placeholder="e.g. 0, 30" />
+        <input type="text" id="minutes" placeholder="e.g. 0, 30" dir="ltr" />
       </div>
       <div id="pane-dailyTimes" class="pane hidden">
         <label for="times">At time(s)</label>
-        <input type="text" id="times" placeholder="e.g. 9:00, 20:30" />
+        <input type="text" id="times" placeholder="e.g. 9:00, 20:30" dir="ltr" />
       </div>
     </section>
 
@@ -699,8 +699,9 @@
       <p class="muted">Prayer times are calculated on your machine from these coordinates. Nothing is sent anywhere.</p>
       <div class="row">
         <label for="citySearch">Search for your city</label>
-        <input type="text" id="citySearch" placeholder="e.g. Jerusalem, Cairo, London" autocomplete="off" />
+        <input type="text" id="citySearch" placeholder="e.g. Jerusalem, Cairo, London" autocomplete="off" dir="ltr" />
       </div>
+      <p class="muted" id="citySearchHint">City names are in English — type “Jerusalem”, not “القدس”.</p>
       <div id="cityResults" class="city-results"></div>
       <div class="row between">
         <span id="currentLocation" class="muted">No location set</span>
