@@ -130,6 +130,49 @@ export function findCities(query, limit = 20) {
 }
 
 /**
+ * The nearest city in the bundled database to a pair of coordinates.
+ *
+ * Used to turn raw coordinates from the device's location service into
+ * something with a NAME and, more importantly, an IANA TIMEZONE — which
+ * the browser geolocation API does not provide and which every scheduling
+ * decision in the app depends on.
+ *
+ * Deliberately offline: a reverse-geocoding service would mean sending the
+ * user's position to a third party, which is exactly what this app avoids.
+ * 34,000 rows is a trivial scan.
+ *
+ * Equirectangular approximation rather than haversine: at the distances
+ * involved (the nearest city is normally tens of km) the error is metres,
+ * and we only need the ARGMIN, not the distance itself.
+ *
+ * @returns {(City & {distanceKm:number})|null}
+ */
+export function nearestCity(rows, latitude, longitude, countries) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+  const latRad = (latitude * Math.PI) / 180;
+  const cosLat = Math.cos(latRad);
+  let best = null;
+  let bestScore = Infinity;
+
+  for (const row of rows ?? []) {
+    const dLat = row[LAT] - latitude;
+    // Longitude degrees shrink towards the poles, so scale before comparing.
+    const dLon = (row[LON] - longitude) * cosLat;
+    const score = dLat * dLat + dLon * dLon;
+    if (score < bestScore) {
+      bestScore = score;
+      best = row;
+    }
+  }
+
+  if (!best) return null;
+  // 111.32 km per degree of latitude, close enough for a display figure.
+  const distanceKm = Math.sqrt(bestScore) * 111.32;
+  return { ...hydrate(best, countries), distanceKm: Math.round(distanceKm * 10) / 10 };
+}
+
+/**
  * Build a location record from manually entered coordinates — the escape
  * hatch for anywhere too small to be in cities15000.
  *

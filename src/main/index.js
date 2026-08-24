@@ -27,7 +27,7 @@ import { METHODS, SCHOOLS, HIGH_LATITUDE_RULES } from './prayer/methods.js';
 import { prayerTimes, formatPrayerTime, PRAYER_LABELS, PRAYER_KEYS } from './prayer/times.js';
 import { dueFires, suppressedByQuietHours } from './scheduler/providers.js';
 import { isWithinQuietHours } from './scheduler/quietHours.js';
-import { findCities, manualLocation } from './location/cities.js';
+import { findCities, manualLocation, nearestCity, loadCities } from './location/cities.js';
 import {
   AVAILABLE as TRANSLATIONS,
   downloadTranslation,
@@ -587,6 +587,38 @@ function registerSettingsIpc() {
     } catch (err) {
       console.error('sample notification failed', err);
       return { ok: false, error: err?.message ?? 'Could not show the sample.' };
+    }
+  });
+
+  // Turn raw coordinates from the device's location service into a named
+  // location with an IANA timezone.
+  //
+  // Resolved against the BUNDLED city database, not a reverse-geocoding
+  // service: sending the user's position to a third party is precisely
+  // what this app exists to avoid. The timezone matters more than the
+  // name — every scheduling decision depends on it, and the browser
+  // geolocation API does not supply one.
+  ipcMain.handle('location:resolve', (_e, { latitude, longitude } = {}) => {
+    try {
+      const db = loadCities();
+      const near = nearestCity(db.rows, Number(latitude), Number(longitude), db.countries);
+      if (!near) return { ok: false, error: 'Could not match those coordinates to a known place.' };
+      return {
+        ok: true,
+        // The user's ACTUAL coordinates are kept — the city is only used
+        // for its name and timezone. Snapping to the city centre would
+        // throw away the precision the location service just provided.
+        location: {
+          name: near.label,
+          latitude: Number(latitude),
+          longitude: Number(longitude),
+          timezone: near.timezone
+        },
+        nearest: { label: near.label, distanceKm: near.distanceKm }
+      };
+    } catch (err) {
+      console.error('location resolve failed', err);
+      return { ok: false, error: err?.message ?? 'Could not resolve that location.' };
     }
   });
 

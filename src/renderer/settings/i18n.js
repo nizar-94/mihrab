@@ -98,6 +98,13 @@ const AR = {
   'Longitude': 'خط الطول',
   'Label': 'التسمية',
   'Use these coordinates': 'استخدم هذه الإحداثيات',
+  'Use my location': 'حدّد موقعي',
+  'Your coordinates are stored on this machine and are never sent anywhere by Mihrab.':
+    'تُحفظ إحداثياتك على هذا الجهاز ولا يرسلها محراب إلى أي جهة.',
+  'Asking your system for your location…': 'جارٍ سؤال النظام عن موقعك…',
+  'Location permission was denied. You can search for your city instead.':
+    'رُفض إذن الموقع. يمكنك البحث عن مدينتك بدلًا من ذلك.',
+  'This system does not offer a location service.': 'لا يوفّر هذا النظام خدمة تحديد الموقع.',
 
   // --- prayer times -------------------------------------------------
   'Prayer times': 'أوقات الصلاة',
@@ -130,6 +137,8 @@ const AR = {
   'Morning': 'الصباح',
   'Anchor': 'المرجع',
   'Minutes after': 'دقائق بعده',
+  'At a set time': 'في وقت محدد',
+  'Time': 'الوقت',
   'Evening': 'المساء',
   'Each reminder shows one dhikr with its repeat count, moving to the next one the following day — in order, not at random.':
     'يعرض كل تذكير ذكرًا واحدًا مع عدد مرات تكراره، وينتقل إلى التالي في اليوم التالي — بالترتيب لا عشوائيًا.',
@@ -176,6 +185,9 @@ const AR = {
   // --- sound / startup ----------------------------------------------
   'Sound': 'الصوت',
   'Volume': 'مستوى الصوت',
+  'Test': 'تجربة',
+  'Could not play the test sound.': 'تعذّر تشغيل صوت التجربة.',
+  'Saved': 'تم الحفظ',
   'Startup': 'بدء التشغيل',
   'Start Mihrab automatically when you sign in to Windows.':
     'تشغيل محراب تلقائيًا عند الدخول إلى ويندوز.',

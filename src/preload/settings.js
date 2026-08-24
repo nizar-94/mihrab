@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   // "What times would these settings produce?" — without saving them.
   previewPrayerTimes: (patch) => ipcRenderer.invoke('prayer:preview', patch),
   listAzkar: () => ipcRenderer.invoke('azkar:list'),
+  resolveLocation: (coords) => ipcRenderer.invoke('location:resolve', coords),
   showSample: (kind) => ipcRenderer.invoke('notification:sample', kind),
   listTranslations: () => ipcRenderer.invoke('translations:list'),
   downloadTranslation: (id) => ipcRenderer.invoke('translations:download', id),

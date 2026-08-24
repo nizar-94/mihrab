@@ -254,9 +254,20 @@
     }
     .actions {
       display: flex;
+      align-items: center;
       justify-content: flex-end;
       gap: 8px;
     }
+    /* Save confirmation. Sits beside the button rather than replacing its
+       label, so the button never appears to change into something else. */
+    .saved-note {
+      color: var(--accent-strong);
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-inline-end: 4px;
+      transition: opacity 200ms ease;
+    }
+    .saved-note.hidden { display: none; }
     .btn {
       border-radius: 7px;
       padding: 7px 14px;
@@ -693,8 +704,12 @@
       <div id="cityResults" class="city-results"></div>
       <div class="row between">
         <span id="currentLocation" class="muted">No location set</span>
-        <button type="button" id="manualToggle" class="btn ghost small">Enter coordinates</button>
+        <span>
+          <button type="button" id="useGps" class="btn ghost small">Use my location</button>
+          <button type="button" id="manualToggle" class="btn ghost small">Enter coordinates</button>
+        </span>
       </div>
+      <p class="muted" id="gpsNote">Your coordinates are stored on this machine and are never sent anywhere by Mihrab.</p>
       <div id="manualPane" class="hidden">
         <div class="row">
           <label for="manualLat">Latitude</label>
@@ -778,9 +793,14 @@
           <label for="azkarMorningAnchor">Anchor</label>
           <select id="azkarMorningAnchor"></select>
         </div>
-        <div class="row">
+        <div class="row" id="azkarMorningOffsetRow">
           <label for="azkarMorningOffset">Minutes after</label>
-          <input type="number" id="azkarMorningOffset" min="0" max="240" step="5" />
+          <input type="number" id="azkarMorningOffset" min="0" max="720" step="5" />
+          <span class="muted" id="azkarMorningOffsetHint"></span>
+        </div>
+        <div class="row hidden" id="azkarMorningClockRow">
+          <label for="azkarMorningClock">Time</label>
+          <input type="time" id="azkarMorningClock" />
         </div>
 
         <div class="card-head" style="margin-top:16px">
@@ -794,9 +814,14 @@
           <label for="azkarEveningAnchor">Anchor</label>
           <select id="azkarEveningAnchor"></select>
         </div>
-        <div class="row">
+        <div class="row" id="azkarEveningOffsetRow">
           <label for="azkarEveningOffset">Minutes after</label>
-          <input type="number" id="azkarEveningOffset" min="0" max="240" step="5" />
+          <input type="number" id="azkarEveningOffset" min="0" max="720" step="5" />
+          <span class="muted" id="azkarEveningOffsetHint"></span>
+        </div>
+        <div class="row hidden" id="azkarEveningClockRow">
+          <label for="azkarEveningClock">Time</label>
+          <input type="time" id="azkarEveningClock" />
         </div>
 
         <p class="muted" style="margin-top:12px">Each reminder shows one dhikr with its repeat count, moving to the next one the following day — in order, not at random.</p>
@@ -932,7 +957,10 @@
       <div class="row">
         <label for="volume">Volume</label>
         <input type="range" id="volume" min="0" max="1" step="0.05" />
+        <span id="volumeValue" class="muted"></span>
+        <button type="button" id="testSound" class="btn ghost small">Test</button>
       </div>
+      <audio id="testChime" src="../../../resources/sounds/notify.wav" preload="auto"></audio>
     </section>
 
     <section class="card">
@@ -985,6 +1013,7 @@
     <div id="error" class="error" role="alert"></div>
     <div class="actions">
       <button type="button" id="preview" class="btn ghost">Show a verse now</button>
+      <span id="saved" class="saved-note hidden">Saved</span>
       <button type="button" id="save" class="btn primary">Save</button>
     </div>
   </footer>

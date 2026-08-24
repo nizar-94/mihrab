@@ -13,26 +13,39 @@ import electron from 'electron';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { prayerTimes } from './prayer/times.js';
+import { zonedTime, localDateString, addDays } from './zoned.js';
 
 const { app } = electron;
 
-/** Which prayer each session may anchor to. */
+// Which prayer each session may anchor to, plus a fixed-clock option.
+//
+// The clock option exists because anchoring is not always what people want:
+// someone whose laptop is only open during work hours is better served by
+// "remind me at 14:00" than by "thirty minutes after Asr", which may land
+// while the machine is asleep.
+export const CLOCK_ANCHOR = 'clock';
+
 export const MORNING_ANCHORS = Object.freeze([
   { id: 'fajr', label: 'After Fajr' },
-  { id: 'sunrise', label: 'After sunrise' }
+  { id: 'sunrise', label: 'After sunrise' },
+  { id: CLOCK_ANCHOR, label: 'At a set time' }
 ]);
 
 export const EVENING_ANCHORS = Object.freeze([
   { id: 'asr', label: 'After Asr' },
-  { id: 'maghrib', label: 'After Maghrib' }
+  { id: 'maghrib', label: 'After Maghrib' },
+  { id: CLOCK_ANCHOR, label: 'At a set time' }
 ]);
 
 export const DEFAULT_AZKAR = Object.freeze({
   // On by default. The app asks for a location on first run, so these can
   // be useful immediately instead of waiting to be discovered; the provider
   // is still location-gated, so nothing fires before one is set.
-  morning: { enabled: true, anchor: 'fajr', offsetMinutes: 30 },
-  evening: { enabled: true, anchor: 'asr', offsetMinutes: 30 },
+  // offsetMinutes applies to a prayer anchor; clockTime applies when the
+  // anchor is CLOCK_ANCHOR. Both are always present so switching between
+  // the two modes never loses the other's setting.
+  morning: { enabled: true, anchor: 'fajr', offsetMinutes: 30, clockTime: '07:00' },
+  evening: { enabled: true, anchor: 'asr', offsetMinutes: 30, clockTime: '17:00' },
   // Sequential position through each set, mirroring how verse reminders
   // remember their place. One dhikr per session, advancing each day.
   position: { morning: 0, evening: 0 },
@@ -113,14 +126,28 @@ export function nextAzkarFire(after, location, prayerConfig, azkarConfig) {
   }
 
   const candidates = [];
+  const timeZone = location?.timezone;
+
   for (const dayOffset of [0, 1]) {
     const day = new Date(after.getTime() + dayOffset * 24 * 60 * MINUTE);
-    const times = prayerTimes(location, day, prayerConfig);
 
     for (const session of ['morning', 'evening']) {
       const settings = azkarConfig?.[session];
       if (!settings?.enabled) continue;
 
+      // Fixed clock time: no prayer involved, so this works even where a
+      // prayer time is undefined — which is the whole point at polar
+      // latitudes.
+      if (settings.anchor === CLOCK_ANCHOR) {
+        if (!timeZone) continue;
+        const iso = dayOffset === 0
+          ? localDateString(after, timeZone)
+          : addDays(localDateString(after, timeZone), 1);
+        candidates.push({ at: zonedTime(iso, settings.clockTime ?? '07:00', timeZone), session });
+        continue;
+      }
+
+      const times = prayerTimes(location, day, prayerConfig);
       const anchorTime = times[settings.anchor];
       // null happens at polar latitudes when the anchor prayer has no
       // defined time that day. Skipping is right: there is no meaningful

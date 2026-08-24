@@ -287,8 +287,23 @@ function renderAzkarCounts() {
 function renderAzkar() {
   for (const session of ['morning', 'evening']) {
     const cap = session[0].toUpperCase() + session.slice(1);
-    $(`azkar${cap}Enabled`).checked = azkarConfig[session].enabled === true;
-    $(`azkar${cap}Offset`).value = String(azkarConfig[session].offsetMinutes);
+    const settings = azkarConfig[session];
+    $(`azkar${cap}Enabled`).checked = settings.enabled === true;
+    $(`azkar${cap}Offset`).value = String(settings.offsetMinutes);
+    $(`azkar${cap}Clock`).value = settings.clockTime ?? '07:00';
+
+    // The two are mutually exclusive: an offset means nothing for a fixed
+    // time, and a time means nothing for a prayer anchor. Both values stay
+    // in the config so switching back and forth loses neither.
+    const isClock = settings.anchor === 'clock';
+    $(`azkar${cap}OffsetRow`).classList.toggle('hidden', isClock);
+    $(`azkar${cap}ClockRow`).classList.toggle('hidden', !isClock);
+
+    // Minutes are awkward past an hour or so; show the equivalent.
+    const mins = Number(settings.offsetMinutes) || 0;
+    $(`azkar${cap}OffsetHint`).textContent = mins >= 60
+      ? `= ${Math.floor(mins / 60)}h${mins % 60 ? ' ' + (mins % 60) + 'm' : ''}`
+      : '';
   }
   $('azkarNoLocation').classList.toggle('hidden', Boolean(location));
   $('azkarBody').classList.toggle('disabled', !location);
@@ -468,6 +483,7 @@ async function load() {
   $('position').textContent = `Next in order: ${surahName} — ayah ${ayahNumber}`;
   $('soundEnabled').checked = config.sound.enabled;
   $('volume').value = config.sound.volume;
+  renderVolume();
   $('startWithWindows').checked = config.startWithWindows;
 
   loadedNotification = { ...config.notification };
@@ -592,9 +608,14 @@ async function load() {
     });
     $(`azkar${cap}Anchor`).addEventListener('change', (e) => {
       azkarConfig[session].anchor = e.target.value;
+      renderAzkar(); // swap the offset row for the time row, or back
     });
     $(`azkar${cap}Offset`).addEventListener('change', (e) => {
       azkarConfig[session].offsetMinutes = Number(e.target.value) || 0;
+      renderAzkar(); // refresh the "= 2h 30m" hint
+    });
+    $(`azkar${cap}Clock`).addEventListener('change', (e) => {
+      azkarConfig[session].clockTime = e.target.value;
     });
   }
   // First run: land on the Athan tab with the prompt showing, rather than
@@ -657,6 +678,51 @@ $('fontUp').addEventListener('click', () => {
   renderFontSize();
 });
 
+// Device location. navigator.geolocation works from the app's file://
+// origin; the coordinates it returns are handed to main, which matches
+// them against the BUNDLED city database to get a name and — the part that
+// actually matters — an IANA timezone, which the geolocation API does not
+// provide and which every scheduling decision depends on.
+$('useGps').addEventListener('click', () => {
+  const button = $('useGps');
+  const note = $('gpsNote');
+  if (!navigator.geolocation) {
+    $('error').textContent = 'This system does not offer a location service.';
+    return;
+  }
+  button.disabled = true;
+  $('error').textContent = '';
+  note.textContent = 'Asking your system for your location…';
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude, accuracy } = position.coords;
+      const res = await window.settingsAPI.resolveLocation({ latitude, longitude });
+      button.disabled = false;
+      if (!res.ok) {
+        note.textContent = 'Your coordinates are stored on this machine and are never sent anywhere by Mihrab.';
+        $('error').textContent = res.error;
+        return;
+      }
+      location = res.location;
+      renderLocation();
+      refreshPreview();
+      // State the accuracy rather than implying pinpoint precision: this is
+      // usually network-based positioning, not satellite GPS.
+      note.textContent =
+        `Found you near ${res.nearest.label} (±${Math.round(accuracy)} m). Stored on this machine only.`;
+    },
+    (err) => {
+      button.disabled = false;
+      note.textContent = 'Your coordinates are stored on this machine and are never sent anywhere by Mihrab.';
+      $('error').textContent = err.code === 1
+        ? 'Location permission was denied. You can search for your city instead.'
+        : `Could not get your location (${err.message}). Search for your city instead.`;
+    },
+    { timeout: 15000, maximumAge: 60000 }
+  );
+});
+
 $('manualToggle').addEventListener('click', () => {
   $('manualPane').classList.toggle('hidden');
 });
@@ -697,8 +763,23 @@ $('save').addEventListener('click', async () => {
     language: uiLanguage
   });
   $('error').textContent = res.ok ? '' : res.error;
-  if (res.ok) window.close();
+  if (res.ok) confirmSaved();
 });
+
+// Settings used to close on save, which made changing two things in a row
+// mean reopening the window each time — and gave no confirmation that
+// anything had happened. Now it stays open and says so.
+let savedTimer = null;
+function confirmSaved() {
+  const note = $('saved');
+  note.classList.remove('hidden');
+  note.style.opacity = '1';
+  clearTimeout(savedTimer);
+  savedTimer = setTimeout(() => {
+    note.style.opacity = '0';
+    setTimeout(() => note.classList.add('hidden'), 220);
+  }, 1800);
+}
 
 $('reset').addEventListener('click', async () => {
   await window.settingsAPI.resetPosition();
@@ -706,6 +787,22 @@ $('reset').addEventListener('click', async () => {
 });
 
 $('preview').addEventListener('click', () => window.settingsAPI.preview());
+
+// Volume test. Plays the real notification chime at whatever the slider is
+// currently set to, so the number means something before you commit to it.
+function renderVolume() {
+  $('volumeValue').textContent = `${Math.round(Number($('volume').value) * 100)}%`;
+}
+$('volume').addEventListener('input', renderVolume);
+$('testSound').addEventListener('click', () => {
+  const chime = $('testChime');
+  chime.volume = Number($('volume').value);
+  chime.currentTime = 0;
+  // Audio failure must never break Settings, exactly as on the cards.
+  chime.play().catch(() => {
+    $('error').textContent = 'Could not play the test sound.';
+  });
+});
 
 // Sample notifications. Each shows the real card with a "Sample" badge, so
 // what you see is exactly what a real reminder will look like.

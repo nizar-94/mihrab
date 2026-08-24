@@ -18,7 +18,7 @@ import {
 } from './prayer/methods.js';
 import { NOTIFIABLE_KEYS, DEFAULT_PER_PRAYER } from './prayer/schedule.js';
 import { DEFAULT_FASTING } from './fasting.js';
-import { DEFAULT_AZKAR, MORNING_ANCHORS, EVENING_ANCHORS } from './azkar.js';
+import { DEFAULT_AZKAR, MORNING_ANCHORS, EVENING_ANCHORS, CLOCK_ANCHOR } from './azkar.js';
 
 // Hour may be one or two digits: "1:31" and "01:31" are the same time, and
 // typing the leading zero is friction with no purpose. Everything is
@@ -235,10 +235,20 @@ export function validateAzkar(a) {
       ? raw.anchor
       : DEFAULT_AZKAR[name].anchor;
     const offset = raw?.offsetMinutes ?? DEFAULT_AZKAR[name].offsetMinutes;
-    if (!Number.isInteger(offset) || offset < 0 || offset > 240) {
-      return { error: `${name} azkar offset must be between 0 and 240 minutes.` };
+    // Up to 12 hours: "four hours after Fajr" is a legitimate way to say
+    // mid-morning, and the old 240-minute cap made that impossible.
+    if (!Number.isInteger(offset) || offset < 0 || offset > 720) {
+      return { error: `${name} azkar offset must be between 0 and 720 minutes.` };
     }
-    return { value: { enabled: raw?.enabled === true, anchor, offsetMinutes: offset } };
+
+    const clockTime = normaliseTime(raw?.clockTime ?? DEFAULT_AZKAR[name].clockTime);
+    if (clockTime === null) {
+      return { error: `${name} azkar time must be in HH:MM format, e.g. 7:00.` };
+    }
+
+    // Both are kept whatever the anchor is, so switching between a prayer
+    // anchor and a fixed time never discards the other setting.
+    return { value: { enabled: raw?.enabled === true, anchor, offsetMinutes: offset, clockTime } };
   };
 
   const morning = session('morning', MORNING_ANCHORS);

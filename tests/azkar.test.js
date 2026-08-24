@@ -241,9 +241,68 @@ describe('nextAzkarFire', () => {
 });
 
 describe('anchor options', () => {
-  it('offers sensible anchors for each session', () => {
-    expect(MORNING_ANCHORS.map((a) => a.id)).toEqual(['fajr', 'sunrise']);
-    expect(EVENING_ANCHORS.map((a) => a.id)).toEqual(['asr', 'maghrib']);
+  it('offers sensible prayer anchors for each session, plus a fixed time', () => {
+    expect(MORNING_ANCHORS.map((a) => a.id)).toEqual(['fajr', 'sunrise', 'clock']);
+    expect(EVENING_ANCHORS.map((a) => a.id)).toEqual(['asr', 'maghrib', 'clock']);
+  });
+});
+
+describe('nextAzkarFire — fixed clock time', () => {
+  const clockConfig = (session, time) => ({
+    morning: { enabled: false, anchor: 'fajr', offsetMinutes: 30, clockTime: '07:00' },
+    evening: { enabled: false, anchor: 'asr', offsetMinutes: 30, clockTime: '17:00' },
+    position: { morning: 0, evening: 0 },
+    disabled: [],
+    custom: [],
+    [session]: { enabled: true, anchor: 'clock', offsetMinutes: 30, clockTime: time }
+  });
+
+  const shown = (d) => new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: JERUSALEM.timezone
+  }).format(d);
+
+  it('fires at the chosen wall-clock time', () => {
+    const after = new Date('2026-08-23T04:00:00Z'); // 07:00 local
+    const fire = nextAzkarFire(after, JERUSALEM, PRAYER, clockConfig('morning', '14:00'));
+    expect(fire.session).toBe('morning');
+    expect(shown(fire.at)).toBe('14:00');
+  });
+
+  it('rolls to tomorrow once today has passed', () => {
+    const after = new Date('2026-08-23T18:00:00Z'); // 21:00 local
+    const fire = nextAzkarFire(after, JERUSALEM, PRAYER, clockConfig('evening', '14:00'));
+    expect(shown(fire.at)).toBe('14:00');
+    expect(fire.at.getTime()).toBeGreaterThan(after.getTime());
+    expect(fire.at.getTime() - after.getTime()).toBeLessThan(24 * 3600_000);
+  });
+
+  it('ignores the prayer offset entirely in clock mode', () => {
+    // offsetMinutes stays in the config so switching modes does not lose
+    // it, but it must not shift a fixed time.
+    const after = new Date('2026-08-23T04:00:00Z');
+    const fire = nextAzkarFire(after, JERUSALEM, PRAYER, clockConfig('morning', '09:30'));
+    expect(shown(fire.at)).toBe('09:30');
+  });
+
+  it('works at a polar latitude where the prayer anchor would not', () => {
+    // The reason this mode earns its place: at 69N there are days with no
+    // defined Fajr at all, and a prayer-anchored reminder simply does not
+    // fire. A clock time always does.
+    const tromso = { latitude: 69.6492, longitude: 18.9553, timezone: 'Europe/Oslo' };
+    const fire = nextAzkarFire(new Date('2027-06-21T00:00:00Z'), tromso, PRAYER, clockConfig('morning', '08:00'));
+    expect(fire).not.toBeNull();
+    expect(new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Oslo'
+    }).format(fire.at)).toBe('08:00');
+  });
+
+  it('never returns a time at or before the given instant', () => {
+    let cursor = new Date('2026-08-23T00:00:00Z');
+    for (let i = 0; i < 20; i++) {
+      const fire = nextAzkarFire(cursor, JERUSALEM, PRAYER, clockConfig('morning', '11:15'));
+      expect(fire.at.getTime()).toBeGreaterThan(cursor.getTime());
+      cursor = new Date(fire.at.getTime() + 1000);
+    }
   });
 });
 

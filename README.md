@@ -31,8 +31,8 @@ servers, no telemetry.
 
 ### Prayer times
 
-- **Works anywhere** — choose from 34,000 bundled cities or enter
-  coordinates directly. Nothing is sent anywhere.
+- **Works anywhere** — use your device's location, choose from 34,000
+  bundled cities, or enter coordinates directly.
 - **Twelve calculation methods** — Muslim World League, Umm Al-Qura, ISNA,
   Egyptian, Karachi, Diyanet and more — plus Standard/Hanafi for Asr, so the
   times match whichever convention your local mosque follows.
@@ -46,9 +46,11 @@ servers, no telemetry.
 
 - **34 morning and evening adhkar** in Arabic, with English translation,
   transliteration and repeat counts.
-- **Anchored to prayer times, not the clock** — morning after Fajr or
-  sunrise, evening after Asr or Maghrib, with an offset you choose. The
-  reminder stays in its proper window as day length changes through the year.
+- **Anchored to prayer times, or to the clock** — morning after Fajr or
+  sunrise, evening after Asr or Maghrib, with an offset of up to twelve
+  hours; or simply "at 14:00" if a fixed time suits your day better. A
+  prayer anchor keeps the reminder in its proper window as day length
+  changes through the year.
 - **Editable** — switch any off, or add your own.
 
 ### Fasting
@@ -63,7 +65,8 @@ servers, no telemetry.
 
 - Lives in the tray; runs with no window open.
 - Settings in **Arabic or English**, right-to-left when Arabic.
-- Quiet hours, pause and resume, and a sample notification for each category.
+- Quiet hours, pause and resume, a sample notification for each category,
+  and a test button for the notification sound.
 - Starts with Windows, and updates itself from GitHub Releases.
 
 ---
@@ -119,8 +122,27 @@ source:
 1. **Update checks** against this repository's Releases feed.
 2. **A translation download**, once, if you choose one.
 
-No accounts, no analytics, no telemetry. Nothing about you leaves your
-machine.
+No accounts, no analytics, no telemetry.
+
+### Your location
+
+**Your coordinates never leave your machine.** They are stored in your local
+config file and used only to calculate prayer times on your own computer.
+Mihrab does not transmit them anywhere, and there is no server to transmit
+them to.
+
+The **Use my location** button asks *Windows* for your position through the
+standard browser location API. Worth being precise about what that means:
+Windows may itself consult an online service to work that out — that is the
+operating system's behaviour, not Mihrab's, and it is the same mechanism any
+website uses when it asks where you are. Once Windows answers, the
+coordinates stay here.
+
+The name and timezone attached to your location are resolved **offline**,
+against the bundled city database. No reverse-geocoding service is
+contacted. If you would rather not use the button at all, searching for your
+city or typing coordinates gives exactly the same result with no location
+service involved.
 
 ---
 
